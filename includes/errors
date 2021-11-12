@@ -1,0 +1,61 @@
+#!/bin/bash
+
+## constants
+
+INVALID_ARGS=1
+SUDO_NOT_ALLOWED=2
+OPERATION_FAILED=3
+FILE_NOT_FOUND=4
+FILE_ALREADY_EXIST=5
+COMPILE_ERROR=6
+UNKNOWN_ERROR=999
+
+
+## data utils
+
+function error2str() {
+  if [ $# -ne 1 ] ; then
+    _error_exit $INVALID_ARGS "invalid # of args passed to error2str()."
+  fi
+
+  case $1 in
+    $INVALID_ARGS)
+      echo "Invalid arguments: # of args is invalid or arguments are invalid"
+    ;;
+    $SUDO_NOT_ALLOWED)
+      echo "Sudo not allowed: failed to sudo"
+    ;;
+    $OPERATION_FAILED)
+      echo "File not found: files/dirs needed are not found"
+    ;;
+    $FILE_ALREADY_EXIST)
+      echo "File already exist: files/dirs are already exist, and not allowed to overwrite"
+    ;;
+    $COMPILE_ERROR)
+      echo "Compile error: failed to build files"
+    ;;
+    $UNKNOWN_ERROR)
+      echo "Unknown error: misc errors"
+    ;;
+    *)
+      echo "Unregistered error num"
+    ;;
+  esac
+}
+
+## utils
+
+function _error() {
+  local argv=("$@")
+  local fmt="[ERROR] $1"
+  local args=("${argv[@]:1}")
+  >&2 printf "$fmt" "${args[@]}"
+  >&2 echo ""
+}
+
+function _error_exit() {
+  exit_code=$1
+  shift
+  _error "$@"
+  exit "$exit_code"
+}
