@@ -1,6 +1,10 @@
 #!/bin/bash
+[ -n "$H_GUARD_CONFIGER" ] && return
+readonly H_GUARD_CONFIGER=1
 
 CONFIGFILE=".lysithea.conf"
+
+source "$(realpath $(dirname $0))/includes/errors"
 
 function init_config() {
   if ! [ -f "$CONFIGFILE" ] ; then

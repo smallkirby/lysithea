@@ -1,0 +1,3 @@
+#!/bin/bash
+[ -n "$H_GUARD_UTILS" ] && return
+readonly H_GUARD_UTILS=1

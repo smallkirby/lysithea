@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e # XXX
+
 VERSION=1.0.0
 
 # configs
@@ -10,10 +12,10 @@ SNIPPET_BASE=$HOME/$IAM     # https://github.com/smallkirby/snippet
 EXPLOIT=exploit
 QEMUSCRIPT=run.sh
 
-
 # includes
 source "$(realpath $(dirname $0))/includes/errors"
 source "$(realpath $(dirname $0))/includes/configer"
+source "$(realpath $(dirname $0))/includes/utils"
 
 function compile_exploit() {
   echo "[+] compiling exploit..."
@@ -48,13 +50,17 @@ function init() {
     fi
   done
 
-  local qemu_candidates
-  qemu_candidates=$(find . -type f -name "run*.*")
-  if [ -n "$qemu_candidates" ] ; then
-    QEMUSCRIPT="$qemu_candidates".dev
-    printf "[+] found QEMU run-script: %s. copying -> %s\n" "$qemu_candidates" "$QEMUSCRIPT"
-    cp "$qemu_candidates" "$QEMUSCRIPT"
+  readarray -t qemu_candidates < <(find . -maxdepth 1 -type f -name "run*.*" | grep -v dev)
+  if [ "${#qemu_candidates[@]}" -ge 1 ] ; then
+    local qemu_runscript="${qemu_candidates[0]}"
+    QEMUSCRIPT="$qemu_runscript".dev
+    if ! [ -f "$QEMUSCRIPT" ] ; then
+      printf "[+] found %d QEMU run-script candidates: %s\n" "${#qemu_candidates[@]}" "${qemu_candidates[*]}"
+      printf "[+] %s copying -> %s\n" "$qemu_runscript" "$QEMUSCRIPT"
+      cp "$qemu_runscript" "$QEMUSCRIPT"
+    fi
   fi
+  exit
 
   return 0;
 }

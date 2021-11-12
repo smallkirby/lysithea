@@ -1,4 +1,6 @@
 #!/bin/bash
+[ -n "$H_GUARD_ERRORS" ] && return
+readonly H_GUARD_ERRORS=1
 
 ## constants
 
