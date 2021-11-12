@@ -4,4 +4,5 @@ exploit
 /exploit.c
 /exploit.h
 /extract-vmlinux.sh
+/.lysithea.conf
 

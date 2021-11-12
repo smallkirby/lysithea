@@ -8,6 +8,7 @@ OPERATION_FAILED=3
 FILE_NOT_FOUND=4
 FILE_ALREADY_EXIST=5
 COMPILE_ERROR=6
+CONFIG_INVALID=7
 UNKNOWN_ERROR=999
 
 
@@ -26,6 +27,9 @@ function error2str() {
       echo "Sudo not allowed: failed to sudo"
     ;;
     $OPERATION_FAILED)
+      echo "Operation failed: primitive operation failed"
+    ;;
+    $FILE_NOT_FOUND)
       echo "File not found: files/dirs needed are not found"
     ;;
     $FILE_ALREADY_EXIST)
@@ -33,6 +37,9 @@ function error2str() {
     ;;
     $COMPILE_ERROR)
       echo "Compile error: failed to build files"
+    ;;
+    $CONFIG_INVALID)
+      echo "Config invalid: config is not specified or invalid"
     ;;
     $UNKNOWN_ERROR)
       echo "Unknown error: misc errors"

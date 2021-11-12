@@ -2,14 +2,18 @@
 
 VERSION=1.0.0
 
-source includes/errors
-
 # configs
 IAM=$(basename $0)
 EXTRACTED=extracted
 ROOTFS=rootfs.cpio
 SNIPPET_BASE=$HOME/$IAM     # https://github.com/smallkirby/snippet
 EXPLOIT=exploit
+QEMUSCRIPT=run.sh
+
+
+# includes
+source "$(realpath $(dirname $0))/includes/errors"
+source "$(realpath $(dirname $0))/includes/configer"
 
 function compile_exploit() {
   echo "[+] compiling exploit..."
@@ -33,16 +37,24 @@ function init() {
   echo "[+] initiating pwn workspace..."
 
   local KBASE=$SNIPPET_BASE/assets
-  local TARGETS=("$(basename $0) exploit.c exploit.h extract-vmlinux.sh")
+  local TARGETS=("exploit.c exploit.h extract-vmlinux.sh")
 
   for target in ${TARGETS[@]} ; do
     if [ -f $target ] ; then
       printf "[-] %s already exists, skipping. \n" "$target"
     else
       printf "[.] copying %s\n" "$target"
-      cp "$KBASE/$target" ./ || _error_exit $OPERATION_FAILED "copy failed."
+      cp "$KBASE/$target" ./ || _error_exit "$OPERATION_FAILED" "copy failed."
     fi
   done
+
+  local qemu_candidates
+  qemu_candidates=$(find . -type f -name "run*.*")
+  if [ -n "$qemu_candidates" ] ; then
+    QEMUSCRIPT="$qemu_candidates".dev
+    printf "[+] found QEMU run-script: %s. copying -> %s\n" "$qemu_candidates" "$QEMUSCRIPT"
+    cp "$qemu_candidates" "$QEMUSCRIPT"
+  fi
 
   return 0;
 }
@@ -91,6 +103,31 @@ function extract_filesystem() {
   return 0
 }
 
+function exploit_local() {
+  echo "[+] starting exploit localy..."
+  _run_qemu
+}
+
+function exploit_remote() {
+  echo "[+] starting exploit remotely..."
+}
+
+function exploit() {
+  if [ -n "$EXPLOIT_LOCAL" ] ; then
+    exploit_local
+  else
+    exploit_remote
+  fi
+}
+
+function _run_qemu() {
+  if [ -z "$QEMUSCRIPT" ] ; then
+    _error_exit $CONFIG_INVALID "specify which qemu script to run"
+  fi
+
+  bash $QEMUSCRIPT
+}
+
 function _set_command() {
   if [ -n "$COMMAND" ] ; then
     _error_exit $INVALID_ARGS "multiple commands are specified: '%s' and '%s'" "$COMMAND" "$1"
@@ -110,7 +147,7 @@ function parse_arguments() {
         HELP=1
         return 0
       ;;
-      -v|--version)
+      -V|--verbose)
         VERBOSE=1
         shift
       ;;
@@ -140,6 +177,15 @@ function parse_arguments() {
         _set_command error
         shift
         ERROR_ASKED=$1
+        shift
+      ;;
+      exploit|local)
+        _set_command exploit
+        EXPLOIT_LOCAL=1
+        shift
+      ;;
+      remote)
+        _set_command exploit
         shift
       ;;
       # unknown
@@ -186,6 +232,9 @@ function main() {
     ;;
     error)
       error2str $ERROR_ASKED
+    ;;
+    exploit)
+      exploit
     ;;
     *)
       _error_exit $UNKNOWN_ERROR "command not found."

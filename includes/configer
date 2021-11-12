@@ -1,0 +1,79 @@
+#!/bin/bash
+
+CONFIGFILE=".lysithea.conf"
+
+function init_config() {
+  if ! [ -f "$CONFIGFILE" ] ; then
+    printf "[+] creating lysithea config file: %s\n" "$CONFIGFILE"
+    >$CONFIGFILE echo "### lysithea configuration file ###"
+  fi
+}
+
+function find_config() {
+  if [ $# -ne 1 ] ; then
+    return 1 # invalid args
+  fi
+  if ! [ -f "$CONFIGFILE" ] ; then
+    return 2 # config file not found
+  fi
+
+  while IFS= read -r cline; do
+    if ! [[ $cline == "#"* ]] ; then
+      local config_name config_value
+      config_name=$(cut -d '=' -f 1 <<< $cline)
+      config_value=$(cut -d '=' -f 2 <<< $cline)
+      if [ -z $config_name ] || [ -z $config_value ] ; then
+        continue # just skip invalid line
+      fi
+
+      if [ "$1" = "$config_name" ] ; then
+        echo $config_value
+        break
+      fi
+    fi
+  done < "$CONFIGFILE"
+
+  return 0
+}
+
+function set_all_configs() {
+  if ! [ -f "$CONFIGFILE" ] ; then
+    return 2 # config file not found
+  fi
+
+  while IFS= read -r cline; do
+    if ! [[ $cline == "#"* ]] ; then
+      local config_name config_value
+      config_name=$(cut -d '=' -f 1 <<< $cline)
+      config_value=$(cut -d '=' -f 2 <<< $cline)
+      if [ -z $config_name ] || [ -z $config_value ] ; then
+        >&2 "[-] invalid config line: %s" $cline
+        return 3 # invalid line
+      fi
+
+      printf -v "$config_name" "%s" "$config_value"
+    fi
+  done < "$CONFIGFILE"
+
+  return 0
+}
+
+function write_config() {
+  if [ $# -ne 2 ] ; then
+    return 1
+  fi
+
+  init_config
+
+  existing_one=$(find_config "$1") || return $?
+  if [ -n "$existing_one" ] ; then
+    if [ -n "$VERBOSE" ] && [ "$VERBOSE" = "1" ] ; then
+      echo "[.] overwriting exising config line."
+    fi
+    sed -i "s/$1=$existing_one/$1=$2/" $CONFIGFILE || return 1
+  else
+    >$CONFIGFILE echo "$1=$2"
+  fi
+
+  return 0
+}
