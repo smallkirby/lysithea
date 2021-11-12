@@ -1,0 +1,214 @@
+#!/bin/bash
+
+VERSION=1.0.0
+
+# errors
+INVALID_ARGS=1
+SUDO_NOT_ALLOWED=2
+OPERATION_FAILED=3
+FILE_NOT_FOUND=4
+FILE_ALREADY_EXIST=5
+COMPILE_ERROR=6
+UNKNOWN_ERROR=999
+
+
+# configs
+EXTRACTED=extracted
+ROOTFS=rootfs.cpio
+SNIPPET_BASE=$HOME/snippet # https://github.com/smallkirby/snippet
+EXPLOIT=exploit
+
+IAM=$(basename $0)
+
+function _error() {
+  local argv=("$@")
+  local fmt="[ERROR] $1"
+  local args=("${argv[@]:1}")
+  >&2 printf "$fmt" "${args[@]}"
+  >&2 echo ""
+}
+
+function _error_exit() {
+  exit_code=$1
+  shift
+  _error "$@"
+  exit "$exit_code"
+}
+
+function compile_exploit() {
+  echo "[+] compiling exploit..."
+  gcc "$EXPLOIT".c -o "$EXPLOIT" --static -g -O0 -masm=intel -pthread || _error_exit $COMPILE_ERROR "compile error"
+  cp $EXPLOIT $EXTRACTED
+}
+
+function compress_filesystem() {
+  echo "[+] re-compressing filesystem..."
+  if ! [ -d "$EXTRACTED" ] ; then
+    _error_exit $FILE_NOT_FOUND "directry '$EXTRACTED' not found"
+  fi
+  rm -f $ROOTFS
+  chmod 777 -R $EXTRACTED
+  cd $EXTRACTED
+  find ./ -print0 | cpio --owner root --null -o --format=newc > ../$ROOTFS || _error_exit $UNKNOWN_ERROR "failed to compress rootfs"
+  cd ../
+}
+
+function init() {
+  echo "[+] initiating pwn workspace..."
+
+  local KBASE=$SNIPPET_BASE/exploit/kernel
+  local TARGETS=("$(basename $0) exploit.c exploit.h extract-vmlinux.sh")
+
+  for target in ${TARGETS[@]} ; do
+    if [ -f $target ] ; then
+      printf "[-] %s already exists, skipping. \n" "$target"
+    else
+      printf "[.] copying %s\n" "$target"
+      cp "$KBASE/$target" ./ || _error_exit $OPERATION_FAILED "copy failed."
+    fi
+  done
+
+  return 0;
+}
+
+# $1: force replace
+function extract_filesystem() {
+  if [ $# -ge 2 ] ; then
+    _error_exit $INVALID_ARGS "invalid # of args passed to extract_filesystem()."
+    return 1
+  fi
+
+  if [ "$1" = 1 ] ; then
+    local FORCE_EXTRACT=1
+  fi
+
+  if ! [ -f $ROOTFS ] ; then
+    _error_exit $FILE_NOT_FOUND "filesystem '$ROOTFS' not found."
+    return 2
+  fi
+
+  if [ -d $EXTRACTED ] ; then
+    if [ -z "$FORCE_EXTRACT" ] || [ $FORCE_EXTRACT -ne 1 ] ; then
+      _error_exit $FILE_ALREADY_EXIST "directory '$EXTRACTED' already exists. Specify '--force' to replace it."
+    else
+      echo "[+] Removing $EXTRACTED."
+      sudo rm -rf $EXTRACTED || _error_exit $SUDO_NOT_ALLOWED "failed to remove directory."
+    fi
+  fi
+
+  echo "[+] Extracting filesystem into '$EXTRACTED'"
+  mkdir $EXTRACTED
+  filetype=$(file $ROOTFS)
+
+  cd $EXTRACTED || return 3
+  if [[ $filetype == *"gzip"* ]] ; then
+    echo "[+] found gzipped file system."
+    zcat $ROOTFS | cpio -idmv
+  else
+    cpio -idv 2>/dev/null < ../$ROOTFS
+  fi
+
+  if [ $? -eq 0 ] ; then
+    echo "[+] extraction success"
+  fi
+  cd ../
+  return 0
+}
+
+function _set_command() {
+  if [ -n "$COMMAND" ] ; then
+    _error_exit $INVALID_ARGS "multiple commands are specified: '%s' and '%s'" "$COMMAND" "$1"
+  else
+    COMMAND=$1
+    return 0
+  fi
+}
+
+function parse_arguments() {
+  while [[ $# -gt 0 ]] ; do
+    key="$1"
+
+    case $key in
+      # generic options
+      -h|--help)
+        HELP=1
+        return 0
+      ;;
+      -v|--version)
+        VERBOSE=1
+        shift
+      ;;
+      -f|--force)
+        FORCE=1
+        shift
+      ;;
+
+      # commands
+      init)
+        _set_command init
+        shift
+      ;;
+      extract)
+        _set_command extract
+        shift
+      ;;
+      build)
+        _set_command build
+        shift
+      ;;
+      compress)
+        _set_command compress
+        shift
+      ;;
+
+      # unknown
+      *)
+        _error_exit $INVALID_ARGS "unknown command: %s" "$1"
+      ;;
+    esac
+  done
+
+  if [ -z "$COMMAND" ] ; then
+    _error_exit $INVALID_ARGS "command not specified"
+  fi
+}
+
+function usage() {
+  printf "Lysithea v%s\n\n" "$VERSION"
+  echo "Usage:"
+  printf "  init\t\t: init the pwn workspace\n"
+  printf "  extract\t: extract filesystem\n"
+  printf "  run\t\t: run QEMU\n"
+}
+
+function main() {
+  local argv="$@"
+  parse_arguments $argv
+
+  if [ -n "$HELP" ] ; then
+    usage
+    exit 0
+  fi
+
+  case $COMMAND in
+    init)
+      init
+    ;;
+    extract)
+      extract_filesystem $FORCE
+    ;;
+    build)
+      compile_exploit
+    ;;
+    compress)
+      compress_filesystem
+    ;;
+    *)
+      _error_exit $UNKNOWN_ERROR "command not found."
+    ;;
+  esac
+
+  exit 0
+}
+
+main "$@"
