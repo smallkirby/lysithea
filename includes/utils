@@ -1,3 +1,19 @@
 #!/bin/bash
 [ -n "$H_GUARD_UTILS" ] && return
 readonly H_GUARD_UTILS=1
+
+function vprintf() {
+  if [ -n "$VERBOSE" ]; then
+    local argv=("$@")
+    local fmt="$1"
+    local args=("${argv[@]:1}")
+    printf "$fmt" "${args[@]}"
+    echo ""
+  fi
+}
+
+function vecho() {
+  if [ -n "$VERBOSE" ]; then
+    echo "$@"
+  fi
+}

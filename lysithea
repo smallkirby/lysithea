@@ -8,7 +8,7 @@ VERSION=1.0.0
 IAM=$(basename $0)
 EXTRACTED=extracted
 ROOTFS=rootfs.cpio
-SNIPPET_BASE=$HOME/$IAM     # https://github.com/smallkirby/snippet
+SNIPPET_BASE=$HOME/$IAM # https://github.com/smallkirby/snippet
 EXPLOIT=exploit
 QEMUSCRIPT=run.sh
 
@@ -25,13 +25,13 @@ function compile_exploit() {
 
 function compress_filesystem() {
   echo "[+] re-compressing filesystem..."
-  if ! [ -d "$EXTRACTED" ] ; then
+  if ! [ -d "$EXTRACTED" ]; then
     _error_exit $FILE_NOT_FOUND "directry '$EXTRACTED' not found"
   fi
   rm -f $ROOTFS
   chmod 777 -R $EXTRACTED
   cd $EXTRACTED
-  find ./ -print0 | cpio --owner root --null -o --format=newc > ../$ROOTFS || _error_exit $UNKNOWN_ERROR "failed to compress rootfs"
+  find ./ -print0 | cpio --owner root --null -o --format=newc >../$ROOTFS || _error_exit $UNKNOWN_ERROR "failed to compress rootfs"
   cd ../
 }
 
@@ -41,8 +41,8 @@ function init() {
   local KBASE=$SNIPPET_BASE/assets
   local TARGETS=("exploit.c exploit.h extract-vmlinux.sh")
 
-  for target in ${TARGETS[@]} ; do
-    if [ -f $target ] ; then
+  for target in ${TARGETS[@]}; do
+    if [ -f $target ]; then
       printf "[-] %s already exists, skipping. \n" "$target"
     else
       printf "[.] copying %s\n" "$target"
@@ -51,38 +51,40 @@ function init() {
   done
 
   readarray -t qemu_candidates < <(find . -maxdepth 1 -type f -name "run*.*" | grep -v dev)
-  if [ "${#qemu_candidates[@]}" -ge 1 ] ; then
+  if [ "${#qemu_candidates[@]}" -ge 1 ]; then
     local qemu_runscript="${qemu_candidates[0]}"
     QEMUSCRIPT="$qemu_runscript".dev
-    if ! [ -f "$QEMUSCRIPT" ] ; then
+    if ! [ -f "$QEMUSCRIPT" ]; then
       printf "[+] found %d QEMU run-script candidates: %s\n" "${#qemu_candidates[@]}" "${qemu_candidates[*]}"
       printf "[+] %s copying -> %s\n" "$qemu_runscript" "$QEMUSCRIPT"
       cp "$qemu_runscript" "$QEMUSCRIPT"
+
+      vprintf "[.] setting config: %s=%s" "QEMUSCRIPT" "$QEMUSCRIPT"
+      write_config "QEMUSCRIPT" "$QEMUSCRIPT"
     fi
   fi
-  exit
 
-  return 0;
+  return 0
 }
 
 # $1: force replace
 function extract_filesystem() {
-  if [ $# -ge 2 ] ; then
+  if [ $# -ge 2 ]; then
     _error_exit $INVALID_ARGS "invalid # of args passed to extract_filesystem()."
     return 1
   fi
 
-  if [ "$1" = 1 ] ; then
+  if [ "$1" = 1 ]; then
     local FORCE_EXTRACT=1
   fi
 
-  if ! [ -f $ROOTFS ] ; then
+  if ! [ -f $ROOTFS ]; then
     _error_exit $FILE_NOT_FOUND "filesystem '$ROOTFS' not found."
     return 2
   fi
 
-  if [ -d $EXTRACTED ] ; then
-    if [ -z "$FORCE_EXTRACT" ] || [ $FORCE_EXTRACT -ne 1 ] ; then
+  if [ -d $EXTRACTED ]; then
+    if [ -z "$FORCE_EXTRACT" ] || [ $FORCE_EXTRACT -ne 1 ]; then
       _error_exit $FILE_ALREADY_EXIST "directory '$EXTRACTED' already exists. Specify '--force' to replace it."
     else
       echo "[+] Removing $EXTRACTED."
@@ -95,14 +97,14 @@ function extract_filesystem() {
   filetype=$(file $ROOTFS)
 
   cd $EXTRACTED || return 3
-  if [[ $filetype == *"gzip"* ]] ; then
+  if [[ $filetype == *"gzip"* ]]; then
     echo "[+] found gzipped file system."
     zcat $ROOTFS | cpio -idmv
   else
-    cpio -idv 2>/dev/null < ../$ROOTFS
+    cpio -idv 2>/dev/null <../$ROOTFS
   fi
 
-  if [ $? -eq 0 ] ; then
+  if [ $? -eq 0 ]; then
     echo "[+] extraction success"
   fi
   cd ../
@@ -119,7 +121,7 @@ function exploit_remote() {
 }
 
 function exploit() {
-  if [ -n "$EXPLOIT_LOCAL" ] ; then
+  if [ -n "$EXPLOIT_LOCAL" ]; then
     exploit_local
   else
     exploit_remote
@@ -127,7 +129,7 @@ function exploit() {
 }
 
 function _run_qemu() {
-  if [ -z "$QEMUSCRIPT" ] ; then
+  if [ -z "$QEMUSCRIPT" ]; then
     _error_exit $CONFIG_INVALID "specify which qemu script to run"
   fi
 
@@ -135,7 +137,7 @@ function _run_qemu() {
 }
 
 function _set_command() {
-  if [ -n "$COMMAND" ] ; then
+  if [ -n "$COMMAND" ]; then
     _error_exit $INVALID_ARGS "multiple commands are specified: '%s' and '%s'" "$COMMAND" "$1"
   else
     COMMAND=$1
@@ -144,64 +146,64 @@ function _set_command() {
 }
 
 function parse_arguments() {
-  while [[ $# -gt 0 ]] ; do
+  while [[ $# -gt 0 ]]; do
     key="$1"
 
     case $key in
-      # generic options
-      -h|--help)
-        HELP=1
-        return 0
+    # generic options
+    -h | --help)
+      HELP=1
+      return 0
       ;;
-      -V|--verbose)
-        VERBOSE=1
-        shift
+    -V | --verbose)
+      VERBOSE=1
+      shift
       ;;
-      -f|--force)
-        FORCE=1
-        shift
+    -f | --force)
+      FORCE=1
+      shift
       ;;
 
-      # commands
-      init)
-        _set_command init
-        shift
+    # commands
+    init)
+      _set_command init
+      shift
       ;;
-      extract)
-        _set_command extract
-        shift
+    extract)
+      _set_command extract
+      shift
       ;;
-      build)
-        _set_command build
-        shift
+    build)
+      _set_command build
+      shift
       ;;
-      compress)
-        _set_command compress
-        shift
+    compress)
+      _set_command compress
+      shift
       ;;
-      error|-e)
-        _set_command error
-        shift
-        ERROR_ASKED=$1
-        shift
+    error | -e)
+      _set_command error
+      shift
+      ERROR_ASKED=$1
+      shift
       ;;
-      exploit|local)
-        _set_command exploit
-        EXPLOIT_LOCAL=1
-        shift
+    exploit | local)
+      _set_command exploit
+      EXPLOIT_LOCAL=1
+      shift
       ;;
-      remote)
-        _set_command exploit
-        shift
+    remote)
+      _set_command exploit
+      shift
       ;;
-      # unknown
-      *)
-        _error_exit $INVALID_ARGS "unknown command: %s" "$1"
+    # unknown
+    *)
+      _error_exit $INVALID_ARGS "unknown command: %s" "$1"
       ;;
     esac
   done
 
-  if [ -z "$COMMAND" ] ; then
+  if [ -z "$COMMAND" ]; then
     _error_exit $INVALID_ARGS "command not specified"
   fi
 }
@@ -218,32 +220,32 @@ function main() {
   local argv="$@"
   parse_arguments $argv
 
-  if [ -n "$HELP" ] ; then
+  if [ -n "$HELP" ]; then
     usage
     exit 0
   fi
 
   case $COMMAND in
-    init)
-      init
+  init)
+    init
     ;;
-    extract)
-      extract_filesystem $FORCE
+  extract)
+    extract_filesystem $FORCE
     ;;
-    build)
-      compile_exploit
+  build)
+    compile_exploit
     ;;
-    compress)
-      compress_filesystem
+  compress)
+    compress_filesystem
     ;;
-    error)
-      error2str $ERROR_ASKED
+  error)
+    error2str $ERROR_ASKED
     ;;
-    exploit)
-      exploit
+  exploit)
+    exploit
     ;;
-    *)
-      _error_exit $UNKNOWN_ERROR "command not found."
+  *)
+    _error_exit $UNKNOWN_ERROR "command not found."
     ;;
   esac
 
