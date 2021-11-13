@@ -61,8 +61,6 @@ def _overwrite_targets():
   port = os.getenv("EXPLOIT_PORT")
   if port is not None:
     rhp1["port"] = port
-  else:
-    sys.exit(1)
 
   _exploit_bin = os.getenv("EXPLOIT_BIN")
   if exploit_bin is not None:

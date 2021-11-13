@@ -165,7 +165,7 @@ function parse_arguments() {
       HELP=1
       return 0
       ;;
-    -V | --verbose)
+    -v | --verbose)
       VERBOSE=1
       shift
       ;;
