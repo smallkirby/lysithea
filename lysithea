@@ -134,6 +134,11 @@ function log_parse_arguments() {
         shift
         num_processed=$((num_processed+1))
         ;;
+      --no-pager)
+        SHOW_LOG_NO_PAGER=1
+        shift
+        num_processed=$((num_processed+1))
+        ;;
       *)
         if [[ "$1" =~ ^[0-9]+$ ]]; then
           LOG_TARGET_INDEX="$1"
@@ -328,10 +333,14 @@ function main() {
     list_logs
     ;;
   log)
-    if [ -z "$LOG_TARGET_INDEX" ]; then
-      _error_exit "$INVALID_ARGS" "Specify log index, or use --all to show all logs."
+    if [ -n "$SHOW_ALL_LOG" ]; then
+      get_log_all
+    else
+      if [ -z "$LOG_TARGET_INDEX" ]; then
+        _error_exit "$INVALID_ARGS" "Specify log index, or use --all to show all logs."
+      fi
+      get_log_single "$LOG_TARGET_INDEX"
     fi
-    get_log_single "$LOG_TARGET_INDEX"
     ;;
   *)
     _error_exit $UNKNOWN_ERROR "command not found."

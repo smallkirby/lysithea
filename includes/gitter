@@ -55,3 +55,23 @@ function get_log_single() {
   local target_index="$1"
   git show HEAD~"$target_index":$LYSITHEA_HISTORY
 }
+
+function do_get_log_all() {
+  local dates hashes
+  readarray -t dates < <(git log | grep Date | sed 's/Date://')
+  readarray -t hashes < <(git log | grep -e commit | sed 's/commit //')
+  for i in "${!dates[@]}"; do
+    printf "\n\n%d\t: %s\n" "$i" "${dates[$i]}"
+    echo "==================================================="
+    git --no-pager show "${hashes[$i]}":"$LYSITHEA_HISTORY"
+  done
+}
+
+function get_log_all() {
+  output=$(do_get_log_all)
+  if [ -n "$SHOW_LOG_NO_PAGER" ]; then
+    echo "$output"
+  else
+    less -R < <(echo "$output")
+  fi
+}
