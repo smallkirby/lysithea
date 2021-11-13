@@ -123,6 +123,32 @@ function _set_command() {
   fi
 }
 
+function log_parse_arguments() {
+  local num_processed=0
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+
+    case $key in
+      --all)
+        SHOW_ALL_LOG=1
+        shift
+        num_processed=$((num_processed+1))
+        ;;
+      *)
+        if [[ "$1" =~ ^[0-9]+$ ]]; then
+          LOG_TARGET_INDEX="$1"
+          shift
+          num_processed=$((num_processed+1))
+        else
+          break
+        fi
+        ;;
+    esac
+  done
+
+  NUM_ARGUMENTS_PROCESSED=$num_processed
+}
+
 function remote_parse_arguments() {
   local num_processed=0
   while [[ $# -gt 0 ]]; do
@@ -154,8 +180,7 @@ function remote_parse_arguments() {
     esac
   done
 
-  echo $num_processed
-  return
+  NUM_ARGUMENTS_PROCESSED=$num_processed
 }
 
 function parse_arguments() {
@@ -216,10 +241,21 @@ function parse_arguments() {
     remote)
       _set_command exploit
       shift
-      local num_processed
-      num_processed=$(remote_parse_arguments "$@")
-      shift "$num_processed"
+      NUM_ARGUMENTS_PROCESSED=0
+      remote_parse_arguments "$@"
+      shift "$NUM_ARGUMENTS_PROCESSED"
       ;;
+    logs)
+      _set_command logs
+      shift
+    ;;
+    log)
+      _set_command log
+      shift
+      NUM_ARGUMENTS_PROCESSED=0
+      log_parse_arguments "$@"
+      shift "$NUM_ARGUMENTS_PROCESSED"
+    ;;
     # unknown
     *)
       _error_exit $INVALID_ARGS "unknown command: %s" "$1"
@@ -249,6 +285,8 @@ function usage() {
   printf "  local     : run QEMU script\n"
   printf "  exploit   : synonym of 'local'\n"
   printf "  remote    : run exploit on remote host\n"
+  printf "  logs      : show list of logs\n"
+  printf "  log       : show QEMU log if index is given, otherwise open pager\n"
   printf "  version   : show version info\n"
   printf "  help      : show this help\n"
 }
@@ -285,6 +323,15 @@ function main() {
     ;;
   exploit)
     exploit
+    ;;
+  logs)
+    list_logs
+    ;;
+  log)
+    if [ -z "$LOG_TARGET_INDEX" ]; then
+      _error_exit "$INVALID_ARGS" "Specify log index, or use --all to show all logs."
+    fi
+    get_log_single "$LOG_TARGET_INDEX"
     ;;
   *)
     _error_exit $UNKNOWN_ERROR "command not found."

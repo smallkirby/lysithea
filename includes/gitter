@@ -38,3 +38,20 @@ function exploit_callback() {
   git add .
   git commit -m "$(printf $GIT_FORMAT)"
 }
+
+function list_logs() {
+  local logs
+  readarray -t logs < <(git log | grep Date | sed 's/Date://')
+  for i in "${!logs[@]}"; do
+    printf "%d\t: %s\n" "$i" "${logs[$i]}"
+  done
+}
+
+function get_log_single() {
+  if [ $# -ne 1 ]; then
+    _error_exit "$INVALID_ARGS" "# of args passed to get_log_single() is invalid"
+  fi
+
+  local target_index="$1"
+  git show HEAD~"$target_index":$LYSITHEA_HISTORY
+}

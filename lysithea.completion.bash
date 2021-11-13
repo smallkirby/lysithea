@@ -19,6 +19,8 @@ _lysithea()
     "exploit"
     "local"
     "remote"
+    "logs"
+    "log"
   )
 
   local GENERIC_OPTIONS='
