@@ -25,6 +25,7 @@ _lysithea()
     -h --help
     -v --verbose
     -f --force
+    --nolog
   '
 
   # check if command is already specified

@@ -16,6 +16,7 @@ source "$(realpath $(dirname $0))/includes/errors"
 source "$(realpath $(dirname $0))/includes/configer"
 source "$(realpath $(dirname $0))/includes/utils"
 source "$(realpath $(dirname $0))/includes/exploit"
+source "$(realpath $(dirname $0))/includes/gitter"
 
 function compile_exploit() {
   echo "[+] compiling exploit..."
@@ -63,6 +64,8 @@ function init() {
       write_config "QEMUSCRIPT" "$QEMUSCRIPT"
     fi
   fi
+
+  init_git
 
   return 0
 }
@@ -171,6 +174,10 @@ function parse_arguments() {
       ;;
     -f | --force)
       FORCE=1
+      shift
+      ;;
+    --nolog)
+      EXPLOIT_DONT_LOG=1
       shift
       ;;
 
