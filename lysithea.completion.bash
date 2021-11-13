@@ -49,7 +49,7 @@ _lysithea()
           -h --host'"$GENERIC_OPTIONS" -- "$cur" ) )
         return 0
       ;;
-      log)
+      log|fetch)
         COMPREPLY=( $( compgen -W '--all
           --no-pager'"$GENERIC_OPTIONS" -- "$cur" ) )
         return 0
