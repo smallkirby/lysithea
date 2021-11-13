@@ -21,6 +21,7 @@ _lysithea()
     "remote"
     "logs"
     "log"
+    "fetch"
   )
 
   local GENERIC_OPTIONS='

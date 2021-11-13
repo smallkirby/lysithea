@@ -47,6 +47,20 @@ function list_logs() {
   done
 }
 
+function get_exploit() {
+  if [ $# -ne 1 ]; then
+    _error_exit "$INVALID_ARGS" "# of args passed to get_exploit() is invalid"
+  fi
+  local target_index="$1"
+  output=$(git show HEAD~"$target_index":"$EXPLOIT".c)
+
+  if [ -n "$SHOW_LOG_NO_PAGER" ]; then
+    echo "$output"
+  else
+    less -R < <(echo "$output")
+  fi
+}
+
 function get_log_single() {
   if [ $# -ne 1 ]; then
     _error_exit "$INVALID_ARGS" "# of args passed to get_log_single() is invalid"

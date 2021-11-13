@@ -261,6 +261,13 @@ function parse_arguments() {
       log_parse_arguments "$@"
       shift "$NUM_ARGUMENTS_PROCESSED"
     ;;
+    fetch)
+      _set_command fetch
+      shift
+      NUM_ARGUMENTS_PROCESSED=0
+      log_parse_arguments "$@"
+      shift "$NUM_ARGUMENTS_PROCESSED"
+    ;;
     # unknown
     *)
       _error_exit $INVALID_ARGS "unknown command: %s" "$1"
@@ -291,7 +298,8 @@ function usage() {
   printf "  exploit   : synonym of 'local'\n"
   printf "  remote    : run exploit on remote host\n"
   printf "  logs      : show list of logs\n"
-  printf "  log       : show QEMU log if index is given, otherwise open pager\n"
+  printf "  log       : show QEMU log of given time\n"
+  printf "  fetch     : fetch given time of exploit\n"
   printf "  version   : show version info\n"
   printf "  help      : show this help\n"
 }
@@ -341,6 +349,12 @@ function main() {
       fi
       get_log_single "$LOG_TARGET_INDEX"
     fi
+    ;;
+  fetch)
+    if [ -z "$LOG_TARGET_INDEX" ]; then
+      _error_exit "$INVALID_ARGS" "Specify log index"
+    fi
+    get_exploit "$LOG_TARGET_INDEX"
     ;;
   *)
     _error_exit $UNKNOWN_ERROR "command not found."
