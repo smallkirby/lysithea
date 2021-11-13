@@ -248,7 +248,7 @@ function usage() {
   printf "  error     : show error description\n"
   printf "  local     : run QEMU script\n"
   printf "  exploit   : synonym of 'local'\n"
-  printf "  remote    : run exploit on remote hsot\n"
+  printf "  remote    : run exploit on remote host\n"
   printf "  version   : show version info\n"
   printf "  help      : show this help\n"
 }
