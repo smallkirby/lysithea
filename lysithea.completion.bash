@@ -8,7 +8,9 @@ _lysithea()
   _init_completion || return
 
   local COMMANDS=(
+    "version"
     "help"
+
     "init"
     "extract"
     "build"
@@ -42,6 +44,12 @@ _lysithea()
           --nobuild
           -h --host'"$GENERIC_OPTIONS" -- "$cur" ) )
         return 0
+      ;;
+      *)
+        if [ -n "$command" ]; then
+          COMPREPLY=( $( compgen -W "$GENERIC_OPTIONS" -- "$cur" ) )
+          return 0
+        fi
       ;;
     esac
   fi

@@ -161,7 +161,7 @@ function parse_arguments() {
 
     case $key in
     # generic options
-    -h | --help)
+    -h | --help | help)
       HELP=1
       return 0
       ;;
@@ -175,6 +175,10 @@ function parse_arguments() {
       ;;
 
     # commands
+    version)
+      SHOW_VERSION=1
+      return 0
+    ;;
     init)
       _set_command init
       shift
@@ -221,12 +225,25 @@ function parse_arguments() {
   fi
 }
 
+function version() {
+  printf "Lysithea v%s\n" "$VERSION"
+}
+
 function usage() {
-  printf "Lysithea v%s\n\n" "$VERSION"
+  version
+  echo ""
   echo "Usage:"
-  printf "  init\t\t: init the pwn workspace\n"
-  printf "  extract\t: extract filesystem\n"
-  printf "  run\t\t: run QEMU\n"
+  printf "  init      : init the pwn workspace\n"
+  printf "  extract   : extract filesystem\n"
+  printf "  compress  : compress filesystem\n"
+  printf "  run       : run QEMU\n"
+  printf "  build     : compile exploit for local usage\n"
+  printf "  error     : show error description\n"
+  printf "  local     : run QEMU script\n"
+  printf "  exploit   : synonym of 'local'\n"
+  printf "  remote    : run exploit on remote hsot\n"
+  printf "  version   : show version info\n"
+  printf "  help      : show this help\n"
 }
 
 function main() {
@@ -235,6 +252,11 @@ function main() {
 
   if [ -n "$HELP" ]; then
     usage
+    exit 0
+  fi
+
+  if [ -n "$SHOW_VERSION" ]; then
+    version
     exit 0
   fi
 
