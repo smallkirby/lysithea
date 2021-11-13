@@ -9,13 +9,13 @@ IAM=$(basename $0)
 EXTRACTED=extracted
 ROOTFS=rootfs.cpio
 SNIPPET_BASE=$HOME/$IAM # https://github.com/smallkirby/snippet
-EXPLOIT=exploit
 QEMUSCRIPT=run.sh
 
 # includes
 source "$(realpath $(dirname $0))/includes/errors"
 source "$(realpath $(dirname $0))/includes/configer"
 source "$(realpath $(dirname $0))/includes/utils"
+source "$(realpath $(dirname $0))/includes/exploit"
 
 function compile_exploit() {
   echo "[+] compiling exploit..."
@@ -39,7 +39,7 @@ function init() {
   echo "[+] initiating pwn workspace..."
 
   local KBASE=$SNIPPET_BASE/assets
-  local TARGETS=("exploit.c exploit.h extract-vmlinux.sh")
+  local TARGETS=("exploit.c exploit.h extract-vmlinux.sh sender.py")
 
   for target in ${TARGETS[@]}; do
     if [ -f $target ]; then
@@ -56,7 +56,7 @@ function init() {
     QEMUSCRIPT="$qemu_runscript".dev
     if ! [ -f "$QEMUSCRIPT" ]; then
       printf "[+] found %d QEMU run-script candidates: %s\n" "${#qemu_candidates[@]}" "${qemu_candidates[*]}"
-      printf "[+] %s copying -> %s\n" "$qemu_runscript" "$QEMUSCRIPT"
+      printf "[+] copying %s -> %s\n" "$qemu_runscript" "$QEMUSCRIPT"
       cp "$qemu_runscript" "$QEMUSCRIPT"
 
       vprintf "[.] setting config: %s=%s" "QEMUSCRIPT" "$QEMUSCRIPT"
@@ -111,31 +111,6 @@ function extract_filesystem() {
   return 0
 }
 
-function exploit_local() {
-  echo "[+] starting exploit localy..."
-  _run_qemu
-}
-
-function exploit_remote() {
-  echo "[+] starting exploit remotely..."
-}
-
-function exploit() {
-  if [ -n "$EXPLOIT_LOCAL" ]; then
-    exploit_local
-  else
-    exploit_remote
-  fi
-}
-
-function _run_qemu() {
-  if [ -z "$QEMUSCRIPT" ]; then
-    _error_exit $CONFIG_INVALID "specify which qemu script to run"
-  fi
-
-  bash $QEMUSCRIPT
-}
-
 function _set_command() {
   if [ -n "$COMMAND" ]; then
     _error_exit $INVALID_ARGS "multiple commands are specified: '%s' and '%s'" "$COMMAND" "$1"
@@ -143,6 +118,41 @@ function _set_command() {
     COMMAND=$1
     return 0
   fi
+}
+
+function remote_parse_arguments() {
+  local num_processed=0
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+
+    case $key in
+      -p | --port)
+        shift
+        EXPLOIT_PORT="$1"
+        write_config "EXPLOIT_PORT" "$EXPLOIT_PORT"
+        shift
+        num_processed=$((num_processed+2))
+        ;;
+      -H | --host)
+        shift
+        EXPLOIT_HOST="$1"
+        write_config "EXPLOIT_HOST" "$EXPLOIT_HOST"
+        shift
+        num_processed=$((num_processed+2))
+        ;;
+      --nobuild)
+        EXPLOIT_SKIP_BUILD=1
+        shift
+        num_processed=$((num_processed+1))
+        ;;
+      *)
+        break
+        ;;
+    esac
+  done
+
+  echo $num_processed
+  return
 }
 
 function parse_arguments() {
@@ -195,6 +205,9 @@ function parse_arguments() {
     remote)
       _set_command exploit
       shift
+      local num_processed
+      num_processed=$(remote_parse_arguments "$@")
+      shift "$num_processed"
       ;;
     # unknown
     *)

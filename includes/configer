@@ -63,6 +63,24 @@ function set_all_configs() {
   return 0
 }
 
+function read_config() {
+  if [ $# -ne 1 ]; then
+    return 1
+  fi
+
+  local tmpvalue
+  tmpvalue=$(find_config $1)
+  if [ $? -ne 0 ]; then
+    _error_exit "$OPERATION_FAILED" "error while reading configuration file: %s" "$CONFIGFILE"
+  fi
+  if [ -z "$tmpvalue" ]; then
+    return 1 # not found
+  fi
+
+  printf -v "$1" "%s" "$tmpvalue"
+  return 0
+}
+
 function write_config() {
   if [ $# -ne 2 ]; then
     return 1

