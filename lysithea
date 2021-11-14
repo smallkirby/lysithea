@@ -20,12 +20,6 @@ source "$(realpath $(dirname $0))/includes/utils"
 source "$(realpath $(dirname $0))/includes/exploit"
 source "$(realpath $(dirname $0))/includes/gitter"
 
-function compile_exploit() {
-  echo "[+] compiling exploit..."
-  gcc "$EXPLOIT".c -o "$EXPLOIT" --static -g -O0 -masm=intel -pthread || _error_exit $COMPILE_ERROR "compile error"
-  cp $EXPLOIT $EXTRACTED
-}
-
 function compress_filesystem() {
   echo "[+] re-compressing filesystem..."
   if ! [ -d "$EXTRACTED" ]; then
