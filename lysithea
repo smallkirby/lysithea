@@ -11,6 +11,8 @@ ROOTFS=rootfs.cpio
 SNIPPET_BASE=$HOME/$IAM # https://github.com/smallkirby/snippet
 QEMUSCRIPT=run.sh
 
+QEMUSCRIPT_CANDS=( "run" "start" )
+
 # includes
 source "$(realpath $(dirname $0))/includes/errors"
 source "$(realpath $(dirname $0))/includes/configer"
@@ -51,7 +53,11 @@ function init() {
     fi
   done
 
-  readarray -t qemu_candidates < <(find . -maxdepth 1 -type f -name "run*.*" | grep -v dev)
+  local qemu_candidates
+  for word in "${QEMUSCRIPT_CANDS[@]}"; do
+    readarray -t tmp_cands < <(find . -maxdepth 1 -type f -name "$word*.*" | grep -v dev)
+    qemu_candidates+=( "${tmp_cands[@]}" )
+  done
   if [ "${#qemu_candidates[@]}" -ge 1 ]; then
     local qemu_runscript="${qemu_candidates[0]}"
     QEMUSCRIPT="$qemu_runscript".dev
