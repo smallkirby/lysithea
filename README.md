@@ -64,6 +64,41 @@ $ lysithea fetch 2 --no-pager  | head
 #include <fcntl.h>
 ```
 
+
+## Drothea: small kernel exploitable configuration checker
+
+`lysithea` runs `drothea` on target host to check kernel exploitable configuration.  
+
+`drothea` can be executed by POSIX shell such as `ash` (default shell in `busybox`). `drothea` uses its survent `ingrid`, to check some configurations from point of C-view.  
+
+`lysithea` automates execution of `drothea` using QEMU server and named pipes, so you can check configurations just by `lysithea drothea` command in **host** machine.  
+
+Tests are now under construction 🚧.
+
+```drothea.sh
+$ lysithea drothea --verbose
+[.] creating temporary QEMU script...
+[.] editing QEMU script...
+[.] creating pipes for Drothea
+[+] starting QEMU...
+[.] waiting boot finishes...
+[+] Boot confirmed.
+[.] clearing pipe...
+[.] success clearing pipe
+===============================
+Drothea v1.0.0
+[!] mmap_min_addr is not 0x10000: 4096
+[!] SMEP is disabled.
+[!] SMAP is disabled.
+[!] unprivileged ebpf installation is enabled.
+Ingrid v1.0.0
+[.] userfaultfd is not disabled.
+===============================
+[.] END of drothea
+[.] cleaning Drothea...
+```
+
+
 ## Easy misc operations on kernel challenge
 
 `lysithea` helps you extract filesystem, re-compress it, prepare template files on a directory, build exploit for remote execution, and test exploit on local by simple commands.
@@ -88,6 +123,7 @@ Usage:
   logs      : show list of logs
   log       : show QEMU log of given time
   fetch     : fetch given time of exploit
+  drothea   : run kernel configuration checker in QEMU
   version   : show version info
   help      : show this help
 ```

@@ -88,10 +88,12 @@ function run_drothea_in_qemu() {
   # run drothea
   echo "./drothea --verbose" > "$DROTHEA_PIPE".in
   read -r line <"$DROTHEA_PIPE".out # skip first line
+  echo "==============================="
   while :; do
     if read -r -t 1 line <"$DROTHEA_PIPE".out; then
       echo "$line"
     else
+      echo "==============================="
       vecho "[.] END of drothea"
       break
     fi
