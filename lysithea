@@ -19,6 +19,7 @@ source "$(realpath $(dirname $0))/includes/configer"
 source "$(realpath $(dirname $0))/includes/utils"
 source "$(realpath $(dirname $0))/includes/exploit"
 source "$(realpath $(dirname $0))/includes/gitter"
+source "$(realpath $(dirname $0))/includes/drothea-client"
 
 function compress_filesystem() {
   echo "[+] re-compressing filesystem..."
@@ -293,6 +294,10 @@ function parse_arguments() {
       log_parse_arguments "$@"
       shift "$NUM_ARGUMENTS_PROCESSED"
     ;;
+    drothea)
+      _set_command drothea
+      shift
+    ;;
     # unknown
     *)
       _error_exit $INVALID_ARGS "unknown command: %s" "$1"
@@ -325,6 +330,7 @@ function usage() {
   printf "  logs      : show list of logs\n"
   printf "  log       : show QEMU log of given time\n"
   printf "  fetch     : fetch given time of exploit\n"
+  printf "  drothea   : run kernel configuration checker in QEMU\n"
   printf "  version   : show version info\n"
   printf "  help      : show this help\n"
 }
@@ -380,6 +386,9 @@ function main() {
       _error_exit "$INVALID_ARGS" "Specify log index"
     fi
     get_exploit "$LOG_TARGET_INDEX"
+    ;;
+  drothea)
+   run_drothea_in_qemu
     ;;
   *)
     _error_exit $UNKNOWN_ERROR "command not found."

@@ -1,0 +1,105 @@
+#!/bin/bash
+[ -n "$H_GUARD_DROTHEA_CLIENT" ] && return
+readonly H_GUARD_DROTHEA_CLIENT=1
+
+source "$(realpath $(dirname $0))/includes/errors"
+source "$(realpath $(dirname $0))/includes/utils"
+source "$(realpath $(dirname $0))/includes/gitter"
+
+
+DROTHEA_PIPE=.lysithea.pipe
+DROTHEA_SOCKET=.lysithea.socket
+
+function drothea_prepare_qemu_script() {
+  read_config "QEMUSCRIPT"
+  if [ -z "$QEMUSCRIPT" ]; then
+    _error_exit "$CONFIG_INVALID" "QEMUSCRIPT is not set."
+  fi
+  if ! [ -f "$QEMUSCRIPT" ]; then
+    _error_exit "$FILE_NOT_FOUND" "QEMU script '$QEMUSCRIPT not found."
+  fi
+
+  # copy temp QEMU script
+  DROTHEA_QEMUSCRIPT="$QEMUSCRIPT.drothea"
+  cp "$QEMUSCRIPT" "$DROTHEA_QEMUSCRIPT" || _error_exit "$OPERATION_FAILED" "copy failed"
+
+  # insert command option to use pipe and socket
+  # socket is used to connect to QEMU server
+  # pipe is used to read and write interactively with shell
+  vecho "[.] editing QEMU script..."
+  local option_start_line="$(\grep -n "qemu-system" "$DROTHEA_QEMUSCRIPT" | cut -d : -f 1)"
+  if [ -z "$option_start_line" ]; then
+    _error_exit "$OPERATION_FAILED" "cannot find appropriate line to insert drothea options in QEMU script: %s" "$DROTHEA_QEMUSCRIPT"
+  fi
+  option_start_line=$((option_start_line + 1))
+
+  # XXX should insert lines at end of options, to prevent overwrites
+  local OPTIONS_TO_INSERT=( \
+    "-monitor unix:$DROTHEA_SOCKET,server,nowait \\\\"
+    "-serial pipe:$DROTHEA_PIPE \\\\"
+  )
+  for i in "${!OPTIONS_TO_INSERT[@]}"; do
+    local insertion_line="$((option_start_line + i))"
+    local tmp=$(sed "$insertion_line i ${OPTIONS_TO_INSERT[$i]}" "$DROTHEA_QEMUSCRIPT")
+    echo "$tmp" > "$DROTHEA_QEMUSCRIPT"
+  done
+}
+
+function run_drothea_in_qemu() {
+  # prepare QEMU script for Drothea
+  vecho "[.] creating temporary QEMU script..."
+  drothea_prepare_qemu_script
+
+  # prepare pipes
+  vecho "[.] creating pipes for Drothea"
+  mkfifo "$DROTHEA_PIPE".in "$DROTHEA_PIPE".out
+
+  # run QEMU in background
+  echo "[+] starting QEMU..."
+  bash "$DROTHEA_QEMUSCRIPT" &
+  if [ $? -ne 0 ]; then
+    _error_exit "$OPERATION_FAILED" "failed to start QEMU"
+  fi
+
+  # check whether boot ends
+  local SANITY_STRING="CANYOUHEARME"
+  vecho "[.] waiting boot finishes..."
+  while :; do
+    echo "$SANITY_STRING" > "$DROTHEA_PIPE".in
+    if read -r -t 5 line <"$DROTHEA_PIPE".out; then
+      if [[ "$line" == *"$SANITY_STRING"* ]]; then
+        vecho "[+] Boot confirmed."
+        break
+      fi
+    else
+      _error_exit "$UNKNOWN_ERROR" "failed to confirm boot. timeout might be too short"
+    fi
+  done
+
+  # clear pipe
+  vecho "[.] clearing pipe..."
+  while :; do
+    if ! read -r -t 3 <"$DROTHEA_PIPE".out; then
+      vecho "[.] success clearing pipe"
+      break
+    fi
+  done
+
+  # run drothea
+  echo "./drothea --verbose" > "$DROTHEA_PIPE".in
+  read -r line <"$DROTHEA_PIPE".out # skip first line
+  while :; do
+    if read -r -t 1 line <"$DROTHEA_PIPE".out; then
+      echo "$line"
+    else
+      vecho "[.] END of drothea"
+      break
+    fi
+  done
+
+  # cleanup: kill QEMU and remove pipes
+  vecho "[.] cleaning Drothea..."
+  rm -f "$DROTHEA_QEMUSCRIPT"
+  echo "quit" | socat - unix-connect:"$DROTHEA_SOCKET" 1>/dev/null || _error_exit "$OPERATION_FAILED" "failed to quit QEMU"
+  rm -f "$DROTHEA_PIPE".in "$DROTHEA_PIPE".out
+}

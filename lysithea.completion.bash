@@ -22,6 +22,7 @@ _lysithea()
     "logs"
     "log"
     "fetch"
+    "drothea"
   )
 
   local GENERIC_OPTIONS='
