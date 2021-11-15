@@ -57,6 +57,16 @@ function init() {
     cp "$DROTHEA/drothea" ./ || _error_exit "$OPERATION_FAILED" "copy failed"
   fi
 
+  # compile Ingrit and copy
+  if [ -f ingrid ]; then
+    echo "[.] ingrid already exists, skipping"
+  else
+    echo "[.] compiling and copying ingrid"
+    local INGRID=$SNIPPET_BASE/drothea/ingrid
+    make -C "$INGRID" || _error_exit "$COMPILE_ERROR" "failed to build Ingrid"
+    cp "$INGRID/ingrid" ./ || _error_exit "$OPERATION_FAILED" "copy failed"
+  fi
+
   # copy QEMU run script
   local qemu_candidates
   for word in "${QEMUSCRIPT_CANDS[@]}"; do

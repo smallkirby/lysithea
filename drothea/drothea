@@ -32,10 +32,47 @@ test_mmap_min() {
   fi
 }
 
+test_oops_panic() {
+  cmdline="$(cat /proc/cmdline)"
+  if [ "${cmdline#*oops=panic}" = "$cmdline" ]; then
+    echo "[!] Oops doesn't mean panic."
+    vecho " you mignt be able to leak info by invoking crash."
+  fi
+}
+
+test_smep_enabled() {
+  cpui="$(cat /proc/cpuinfo)"
+  if [ "${cpui#*smep}" = "$cpui" ]; then
+    echo "[!] SMEP is disabled."
+  fi
+}
+
+test_smap_enabled() {
+  cpui="$(cat /proc/cpuinfo)"
+  if [ "${cpui#*smap}" = "$cpui" ]; then
+    echo "[!] SMAP is disabled."
+  fi
+}
+
+test_unprivileged_ebpf() {
+  bpfi="$(cat /proc/sys/kernel/unprivileged_bpf_disabled)"
+  if [ "0" = "$bpfi" ]; then
+    echo "[!] unprivileged ebpf installation is enabled."
+  fi
+}
+
 utest_kaslr_enabled() {
   cmdline="$(cat /proc/cmdline)"
-  if ! [ "${cmdline#*nokaslr}" != "$cmdline" ]; then
+  if [ "${cmdline#*nokaslr}" = "$cmdline" ]; then
     echo "[?] KASLR seems enabled. Should turn off for debug purpose."
+  fi
+}
+
+utest_kptr_restrict() {
+  symbols="$(cat /proc/kallsyms | head -n1)"
+  bad_addr="0000000000000000"
+  if [ "${symbols#*$bad_addr}" != "$symbols" ]; then
+    echo "[?] kptr seems restricted. Should try 'echo 0 > /proc/sys/kernel/kptr_restrict' in init script."
   fi
 }
 
@@ -43,13 +80,31 @@ utest_kaslr_enabled() {
 
 ### Main ##############
 
+run_ingrid() {
+  if [ -f ingrid ]; then
+    if [ -n "$VERBOSE" ]; then
+      ./ingrid --verbose
+    else
+      ./ingrid
+    fi
+  fi
+}
+
 # Each test should exec test and print output if needed by itself.
 do_tests() {
-  vecho "[.] starting tests"
-
+  # kernel exploitable configuration
   test_mmap_min
+  test_oops_panic
+  test_smep_enabled
+  test_smap_enabled
+  test_unprivileged_ebpf
 
+  # debug configuration
   utest_kaslr_enabled
+  utest_kptr_restrict
+
+  # Run ingrid
+  run_ingrid
 }
 
 parse_arguments() {
@@ -78,9 +133,10 @@ check_root() {
 }
 
 main() {
-  echo "[+] Starting Drothea v$VERSION"
-  check_root || { echo "[ERROR] Drothea require root priviledge."; exit 1; }
   parse_arguments "$@"
+
+  vecho "Drothea v$VERSION"
+  check_root || { echo "[ERROR] Drothea require root priviledge."; exit 1; }
   do_tests
 }
 
