@@ -1,0 +1,89 @@
+#!/bin/sh
+
+#######################
+#
+# Drothea
+#
+# Small kernel configuration checker for CTF kernel pwn challenges.
+#
+# Drothea assumes to be used by sh in busybox, ash implementation.
+# Error handling is not well done intentionally. Just ignore or exit when error.
+#
+#######################
+
+VERSION=1.0.0
+
+### Utilities #########
+
+vecho() {
+  if [ -n "$VERBOSE" ]; then
+    echo "$@"
+  fi
+}
+
+### END Utilities #####
+
+### Tests #############
+
+test_mmap_min() {
+  min_addr="$(cat /proc/sys/vm/mmap_min_addr)"
+  if ! [ "65536" = "$min_addr" ]; then
+    echo "[!] mmap_min_addr is not 0x10000: $min_addr"
+  fi
+}
+
+utest_kaslr_enabled() {
+  cmdline="$(cat /proc/cmdline)"
+  if ! [ "${cmdline#*nokaslr}" != "$cmdline" ]; then
+    echo "[?] KASLR seems enabled. Should turn off for debug purpose."
+  fi
+}
+
+### END Tests #########
+
+### Main ##############
+
+# Each test should exec test and print output if needed by itself.
+do_tests() {
+  vecho "[.] starting tests"
+
+  test_mmap_min
+
+  utest_kaslr_enabled
+}
+
+parse_arguments() {
+  while [ $# -gt 0 ]; do
+    key="$1"
+
+    case $key in
+    --verbose)
+      VERBOSE=1
+      shift
+      ;;
+    *)
+      echo "[ERROR] unknown argument: $1"
+      exit 1
+    ;;
+    esac
+  done
+}
+
+check_root() {
+  if [ "0" = "$(id -u)" ]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+main() {
+  echo "[+] Starting Drothea v$VERSION"
+  check_root || { echo "[ERROR] Drothea require root priviledge."; exit 1; }
+  parse_arguments "$@"
+  do_tests
+}
+
+### END Main ##############
+
+main "$@"

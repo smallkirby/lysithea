@@ -36,8 +36,9 @@ function init() {
   echo "[+] initiating pwn workspace..."
 
   local KBASE=$SNIPPET_BASE/assets
-  local TARGETS=("exploit.c exploit.h extract-vmlinux.sh sender.py")
+  local TARGETS=("exploit.c exploit.h extract-vmlinux.sh sender.py") # targets under `assets`
 
+  # raw copy of assets
   for target in ${TARGETS[@]}; do
     if [ -f $target ]; then
       printf "[-] %s already exists, skipping. \n" "$target"
@@ -47,6 +48,16 @@ function init() {
     fi
   done
 
+  # copy Drothea
+  local DROTHEA=$SNIPPET_BASE/drothea
+  if [ -f drothea ]; then
+    echo "[-] drothea already exists, skipping."
+  else
+    echo "[.] copying drothea"
+    cp "$DROTHEA/drothea" ./ || _error_exit "$OPERATION_FAILED" "copy failed"
+  fi
+
+  # copy QEMU run script
   local qemu_candidates
   for word in "${QEMUSCRIPT_CANDS[@]}"; do
     readarray -t tmp_cands < <(find . -maxdepth 1 -type f -name "$word*.*" | grep -v dev)
@@ -240,8 +251,12 @@ function parse_arguments() {
       ;;
     exploit | local)
       _set_command exploit
-      EXPLOIT_LOCAL=1
       shift
+      EXPLOIT_LOCAL=1
+
+      NUM_ARGUMENTS_PROCESSED=0
+      remote_parse_arguments "$@"
+      shift "$NUM_ARGUMENTS_PROCESSED"
       ;;
     remote)
       _set_command exploit
