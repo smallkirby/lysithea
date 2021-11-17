@@ -298,6 +298,10 @@ function parse_arguments() {
       _set_command drothea
       shift
     ;;
+    config)
+      _set_command config
+      shift
+    ;;
     # unknown
     *)
       _error_exit $INVALID_ARGS "unknown command: %s" "$1"
@@ -331,11 +335,13 @@ function usage() {
   printf "  log       : show QEMU log of given time\n"
   printf "  fetch     : fetch given time of exploit\n"
   printf "  drothea   : run kernel configuration checker in QEMU\n"
+  printf "  config    : configure default options interactively\n"
   printf "  version   : show version info\n"
   printf "  help      : show this help\n"
 }
 
 function main() {
+  set_all_configs
   local argv="$@"
   parse_arguments $argv
 
@@ -388,7 +394,10 @@ function main() {
     get_exploit "$LOG_TARGET_INDEX"
     ;;
   drothea)
-   run_drothea_in_qemu
+    run_drothea_in_qemu
+    ;;
+  config)
+    configure_interactive
     ;;
   *)
     _error_exit $UNKNOWN_ERROR "command not found."

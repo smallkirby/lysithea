@@ -65,7 +65,7 @@ function set_all_configs() {
 
 function read_config() {
   if [ $# -ne 1 ]; then
-    return 1
+    _error_exit "$INVALID_ARGS" "read_config() is called with invalid # of args."
   fi
 
   local tmpvalue
@@ -74,11 +74,10 @@ function read_config() {
     _error_exit "$OPERATION_FAILED" "error while reading configuration file: %s" "$CONFIGFILE"
   fi
   if [ -z "$tmpvalue" ]; then
-    return 1 # not found
+    return 0 # not found
   fi
 
   printf -v "$1" "%s" "$tmpvalue"
-  return 0
 }
 
 function write_config() {
@@ -99,4 +98,78 @@ function write_config() {
   fi
 
   return 0
+}
+
+function _do_configure_interactive() {
+  echo ""
+  echo "[+] choose below command to flip current setting, or set options by 'OPTION_NAME=OPTION_VALUE'."
+  echo "  nobuild             : skip build of exploit and compression of filesystem defaultly."
+  echo "  nolog               : don't take log of local exploit history defaultly."
+  echo "  exploit=<string>    : specify exploit filename."
+  echo "  rootfs=<string>     : specify rootfs filename."
+
+  read -r -p " ('q' to quit) > " userinput
+  case "$userinput" in
+    nolog)
+      local target_config="EXPLOIT_DONT_LOG"
+      read_config "$target_config"
+      if [ -n "$_EXPLOIT_DONT_LOG" ] && [ "$_EXPLOIT_DONT_LOG" -eq 1 ]; then
+        write_config "$target_config" 0
+        echo "[+] set $target_config to 0."
+      else
+        write_config "$target_config" 1
+        echo "[+] set $target_config to 1."
+      fi
+    ;;
+    nobuild)
+      local target_config="EXPLOIT_SKIP_BUILD"
+      read_config "$target_config"
+      if [ -n "$EXPLOIT_SKIP_BUILD" ] && [ "$EXPLOIT_SKIP_BUILD" -eq 1 ]; then
+        write_config "$target_config" 0
+        echo "[+] set $target_config to 0."
+      else
+        write_config "$target_config" 1
+        echo "[+] set $target_config to 1."
+      fi
+    ;;
+    exploit=*)
+      local target_config="EXPLOIT"
+      local exploit_name="${userinput#*exploit=}"
+      if [ -z "$exploit_name" ]; then
+        echo "[-] specify exploit name."
+      else
+        write_config "$target_config" "$exploit_name"
+        echo "[+] set $target_config to '$exploit_name'"
+      fi
+    ;;
+    rootfs=*)
+      local target_config="ROOTFS"
+      local rootfs_name="${userinput#*rootfs=}"
+      if [ -z "$rootfs_name" ]; then
+        echo "[-] specify rootfs name."
+      else
+        write_config "$target_config" "$rootfs_name"
+        echo "[+] set $target_config to '$rootfs_name'"
+      fi
+    ;;
+    q)
+      exit 0
+    ;;
+    *)
+      printf "Unknown command: %s\n" "$userinput"
+    ;;
+  esac
+}
+
+function configure_interactive() {
+  if ! [ -f "$CONFIGFILE" ]; then
+    _error_exit "$FILE_NOT_FOUND" "config file '%s' not found: do 'lysithea init' first." $CONFIGFILE
+  fi
+  echo "[+] Currenct configurations:"
+  cat "$CONFIGFILE"
+
+  echo ""
+  while :; do
+    _do_configure_interactive
+  done
 }
