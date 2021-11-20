@@ -5,9 +5,18 @@ readonly H_GUARD_GITTER=1
 LYSITHEA_HISTORY=.lysithea.log
 GIT_FORMAT="[lysithea] (auto-generated)"
 
-function init_git() {
-  GIT_TARGETS=( "$EXPLOIT.c"  "$LYSITHEA_HISTORY" ".gitignore" )
+# remove current target first? XXX
+function add_git_target() {
+  if ! [ -f .gitignore ]; then
+    init_git
+  fi
+  if [ "$#" -ne 1 ]; then
+    _error_exit "$INVALID_ARGS" "add_git_target() is called with invalid # of args."
+  fi
+  echo "!$1" >> .gitignore
+}
 
+function init_git() {
   if [ -z "$(which git)" ]; then
     _error_exit "$FILE_NOT_FOUND" "git is not installed"
   fi

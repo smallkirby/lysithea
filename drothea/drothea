@@ -37,7 +37,7 @@ test_oops_panic() {
   cmdline="$(cat /proc/cmdline)"
   if [ "${cmdline#*oops=panic}" = "$cmdline" ]; then
     echo "[!] Oops doesn't mean panic."
-    vecho " you mignt be able to leak info by invoking crash."
+    vecho "\tyou mignt be able to leak info by invoking crash."
   fi
 }
 

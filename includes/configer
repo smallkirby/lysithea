@@ -43,7 +43,8 @@ function find_config() {
 
 function set_all_configs() {
   if ! [ -f "$CONFIGFILE" ]; then
-    return 2 # config file not found
+    echo "[-] config file not found."
+    return 0
   fi
 
   while IFS= read -r cline; do
@@ -107,6 +108,7 @@ function _do_configure_interactive() {
   echo "  nolog               : don't take log of local exploit history defaultly."
   echo "  exploit=<string>    : specify exploit filename."
   echo "  rootfs=<string>     : specify rootfs filename."
+  echo "  qemu=<string>       : specify qemuscript filename."
 
   read -r -p " ('q' to quit) > " userinput
   case "$userinput" in
@@ -140,11 +142,23 @@ function _do_configure_interactive() {
       else
         write_config "$target_config" "$exploit_name"
         echo "[+] set $target_config to '$exploit_name'"
+        echo "[+] changing .gitignore target for logging..."
+        add_git_target "$exploit_name".c
       fi
     ;;
     rootfs=*)
       local target_config="ROOTFS"
       local rootfs_name="${userinput#*rootfs=}"
+      if [ -z "$rootfs_name" ]; then
+        echo "[-] specify rootfs name."
+      else
+        write_config "$target_config" "$rootfs_name"
+        echo "[+] set $target_config to '$rootfs_name'"
+      fi
+    ;;
+    qemuscript=*)
+      local target_config="QEMUSCRIPT"
+      local rootfs_name="${userinput#*qemus=}"
       if [ -z "$rootfs_name" ]; then
         echo "[-] specify rootfs name."
       else

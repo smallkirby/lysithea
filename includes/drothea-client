@@ -46,6 +46,9 @@ function drothea_prepare_qemu_script() {
 }
 
 function run_drothea_in_qemu() {
+  # rebuild filesystem
+  compile_exploit
+
   # prepare QEMU script for Drothea
   vecho "[.] creating temporary QEMU script..."
   drothea_prepare_qemu_script
