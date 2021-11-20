@@ -87,6 +87,7 @@ function init() {
     fi
   fi
 
+  init_config
   init_git
 
   return 0

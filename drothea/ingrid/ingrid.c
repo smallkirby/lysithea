@@ -77,6 +77,47 @@ void test_uffd_enabled() {
   }
 }
 
+void test_config_strict_devmem(void) {
+  int fd = open("/dev/mem", O_RDWR);
+  if (fd == -1) {
+    puts("[-] CONFIG_DEVMEM is disabled.");
+    return;
+  }
+
+  // search system RAM addr, which is restricted to read if CONFIG_STRICT_DEVMEM is enabled.
+  FILE *iomem = fopen("/proc/iomem", "r");
+  if (iomem == NULL) goto FAIL_IOMEM;
+  char *line, buf[0x100];
+  size_t len = 0;
+  unsigned count = 0;
+  unsigned long systemram = 0xdeadbeef;
+  while (getline(&line, &len, iomem) != -1) {
+    if (strstr(line, "System RAM") != 0 && count++) {
+      systemram = strtoul(strtok(line, "-"), NULL, 16);
+      break;
+    }
+  }
+
+  if (systemram == 0xdeadbeef) {
+FAIL_IOMEM:
+    v_printf("[-] failed to search system RAM addr.\n");
+    return;
+  }
+  fclose(iomem);
+
+
+  // try to read from System RAM
+  assert(lseek(fd, (off_t)systemram, SEEK_SET) != -1);
+  //assert(lseek(fd, (off_t)0x100000, SEEK_SET) != -1);
+  if (read(fd, buf, 0x10) == -1) {
+    v_printf("[-] CONFIG_STRICT_DEVMEM is enabled.\n");
+  } else {
+    puts("[+] CONFIG_STRICT_DEVMEM is disabled.");
+  }
+
+  close(fd);
+}
+
 /**** END tests ************/
 
 
@@ -84,6 +125,7 @@ void test_uffd_enabled() {
 
 void do_tests(void) {
   test_uffd_enabled();
+  test_config_strict_devmem();
 }
 
 int main(int argc, char *argv[]) {
