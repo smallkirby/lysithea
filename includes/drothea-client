@@ -56,6 +56,9 @@ function drothea_prepare_qemu_script() {
 
 function run_drothea_in_qemu() {
   # rebuild filesystem
+  if ! [ -f "ingrid" ] || ! [ -f "drothea" ]; then
+    _error_exit "$FILE_NOT_FOUND" "ingrid or drothea not found. Try 'lysithea init' first."
+  fi
   compile_exploit
 
   # prepare QEMU script for Drothea
