@@ -16,6 +16,7 @@ function cleanup_drothea() {
   if [ -f "$DROTHEA_SOCKET" ]; then
     echo "quit" | socat - unix-connect:"$DROTHEA_SOCKET" 1>/dev/null || _error_exit "$OPERATION_FAILED" "failed to quit QEMU"
   fi
+  rm -f "$DROTHEA_SOCKET"
   rm -f "$DROTHEA_PIPE".in "$DROTHEA_PIPE".out
 }
 
