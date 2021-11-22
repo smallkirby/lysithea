@@ -59,7 +59,8 @@ function run_drothea_in_qemu() {
   if ! [ -f "ingrid" ] || ! [ -f "drothea" ]; then
     _error_exit "$FILE_NOT_FOUND" "ingrid or drothea not found. Try 'lysithea init' first."
   fi
-  compile_exploit
+
+ compress_filesystem 
 
   # prepare QEMU script for Drothea
   vecho "[.] creating temporary QEMU script..."
@@ -67,10 +68,10 @@ function run_drothea_in_qemu() {
 
   # prepare pipes
   vecho "[.] creating pipes for Drothea"
-  if [ -f "$DROTHEA_PIPE".in ]; then
+  if [ -p "$DROTHEA_PIPE".in ]; then
     rm -f "$DROTHEA_PIPE".in
   fi
-  if [ -f "$DROTHEA_PIPE".out ]; then
+  if [ -p "$DROTHEA_PIPE".out ]; then
     rm -f "$DROTHEA_PIPE".out
   fi
   mkfifo "$DROTHEA_PIPE".in "$DROTHEA_PIPE".out

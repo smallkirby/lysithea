@@ -21,18 +21,6 @@ source "$(realpath $(dirname $0))/includes/exploit"
 source "$(realpath $(dirname $0))/includes/gitter"
 source "$(realpath $(dirname $0))/includes/drothea-client"
 
-function compress_filesystem() {
-  echo "[+] re-compressing filesystem..."
-  if ! [ -d "$EXTRACTED" ]; then
-    _error_exit $FILE_NOT_FOUND "directry '$EXTRACTED' not found"
-  fi
-  rm -f $ROOTFS
-  chmod 777 -R $EXTRACTED
-  cd $EXTRACTED
-  find ./ -print0 | cpio --owner root --null -o --format=newc >../$ROOTFS || _error_exit $UNKNOWN_ERROR "failed to compress rootfs"
-  cd ../
-}
-
 function init() {
   echo "[+] initiating pwn workspace..."
 
