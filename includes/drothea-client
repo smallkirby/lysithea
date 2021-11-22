@@ -10,6 +10,15 @@ source "$(realpath $(dirname $0))/includes/gitter"
 DROTHEA_PIPE=.lysithea.pipe
 DROTHEA_SOCKET=.lysithea.socket
 
+function cleanup_drothea() {
+  vecho "[.] cleaning Drothea..."
+  rm -f "$DROTHEA_QEMUSCRIPT"
+  if [ -f "$DROTHEA_SOCKET" ]; then
+    echo "quit" | socat - unix-connect:"$DROTHEA_SOCKET" 1>/dev/null || _error_exit "$OPERATION_FAILED" "failed to quit QEMU"
+  fi
+  rm -f "$DROTHEA_PIPE".in "$DROTHEA_PIPE".out
+}
+
 function drothea_prepare_qemu_script() {
   read_config "QEMUSCRIPT"
   if [ -z "$QEMUSCRIPT" ]; then
@@ -55,7 +64,16 @@ function run_drothea_in_qemu() {
 
   # prepare pipes
   vecho "[.] creating pipes for Drothea"
+  if [ -f "$DROTHEA_PIPE".in ]; then
+    rm -f "$DROTHEA_PIPE".in
+  fi
+  if [ -f "$DROTHEA_PIPE".out ]; then
+    rm -f "$DROTHEA_PIPE".out
+  fi
   mkfifo "$DROTHEA_PIPE".in "$DROTHEA_PIPE".out
+
+  # hook cleanup
+  trap cleanup_drothea INT
 
   # run QEMU in background
   echo "[+] starting QEMU..."
@@ -103,8 +121,5 @@ function run_drothea_in_qemu() {
   done
 
   # cleanup: kill QEMU and remove pipes
-  vecho "[.] cleaning Drothea..."
-  rm -f "$DROTHEA_QEMUSCRIPT"
-  echo "quit" | socat - unix-connect:"$DROTHEA_SOCKET" 1>/dev/null || _error_exit "$OPERATION_FAILED" "failed to quit QEMU"
-  rm -f "$DROTHEA_PIPE".in "$DROTHEA_PIPE".out
+  cleanup_drothea
 }
