@@ -23,6 +23,7 @@ function compress_filesystem() {
   if ! [ -d "$EXTRACTED" ]; then
     _error_exit $FILE_NOT_FOUND "directry '$EXTRACTED' not found"
   fi
+  local filetype=$(file $ROOTFS)
   rm -f $ROOTFS
 
   # copy Drothea
@@ -43,5 +44,11 @@ function compress_filesystem() {
   cd $EXTRACTED
   find ./ -print0 | cpio --owner root --null -o --format=newc >../$ROOTFS || _error_exit $UNKNOWN_ERROR "failed to compress rootfs"
   cd ../
+  if [[ $filetype == *"gzip"* ]]; then
+    echo "[+] compressing as gzip..."
+    mv $ROOTFS tmproot
+    gzip tmproot
+    mv tmproot.gz $ROOTFS
+  fi
 }
 
