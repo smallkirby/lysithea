@@ -113,7 +113,7 @@ function extract_filesystem() {
   cd $EXTRACTED || return 3
   if [[ $filetype == *"gzip"* ]]; then
     echo "[+] found gzipped file system."
-    zcat $ROOTFS | cpio -idmv
+    zcat ../$ROOTFS | cpio -idmv
   else
     cpio -idv 2>/dev/null <../$ROOTFS
   fi
