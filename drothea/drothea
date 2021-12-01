@@ -62,6 +62,12 @@ test_unprivileged_ebpf() {
   fi
 }
 
+check_kversion() {
+  kversion="$(cat /proc/version)"
+  vecho "[.] kernel version:"
+  vecho "  $kversion"
+}
+
 utest_kaslr_enabled() {
   cmdline="$(cat /proc/cmdline)"
   if [ "${cmdline#*nokaslr}" = "$cmdline" ]; then
@@ -93,6 +99,9 @@ run_ingrid() {
 
 # Each test should exec test and print output if needed by itself.
 do_tests() {
+  # misc info
+  check_kversion
+
   # kernel exploitable configuration
   test_mmap_min
   test_oops_panic
