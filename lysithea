@@ -141,11 +141,13 @@ function log_parse_arguments() {
     key="$1"
 
     case $key in
+      #* log
       --all)
         SHOW_ALL_LOG=1
         shift
         num_processed=$((num_processed+1))
         ;;
+      #* log
       --no-pager)
         SHOW_LOG_NO_PAGER=1
         shift
@@ -172,6 +174,7 @@ function remote_parse_arguments() {
     key="$1"
 
     case $key in
+      #* remote
       -p | --port)
         shift
         EXPLOIT_PORT="$1"
@@ -179,6 +182,7 @@ function remote_parse_arguments() {
         shift
         num_processed=$((num_processed+2))
         ;;
+      #* remote
       -H | --host)
         shift
         EXPLOIT_HOST="$1"
@@ -186,6 +190,7 @@ function remote_parse_arguments() {
         shift
         num_processed=$((num_processed+2))
         ;;
+      #* remote
       --nobuild)
         EXPLOIT_SKIP_BUILD=1
         shift
@@ -206,18 +211,23 @@ function parse_arguments() {
 
     case $key in
     # generic options
+
+    #* general
     -h | --help | help)
       HELP=1
       return 0
       ;;
+    #* general
     -v | --verbose)
       VERBOSE=1
       shift
       ;;
+    #* general
     -f | --force)
       FORCE=1
       shift
       ;;
+    #* general
     --nolog)
       EXPLOIT_DONT_LOG=1
       shift

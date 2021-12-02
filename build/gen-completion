@@ -1,0 +1,136 @@
+#!/bin/bash
+
+LYSITHEA_ABS="$(realpath "$(realpath "$(dirname "$0")")"/../lysithea)"
+OUTPUT_DIR="$(realpath "$(dirname "$0")/..")"
+OUTPUT_FILE="$OUTPUT_DIR/lysithea.completion.bash"
+TEMPLATE="$(realpath "$(dirname "$0")")/lysithea.completion.bash.template"
+
+GENERIC_OPTIONS=""
+OPTIONS=()
+COMMANDS=()
+
+PLACEHOLDER_GENERIC_OPTIONS="@@@GENERIC_OPTIONS@@@"
+PLACEHOLDER_COMMAND_OPTIONS="@@@COMMAND_OPTIONS@@@"
+PLACEHOLDER_COMMANDS="@@@COMMANDS@@@"
+
+function write_completion() {
+  while IFS='|' read -r line; do
+    if [[ "$line" == *$PLACEHOLDER_GENERIC_OPTIONS* ]]; then
+      echo "${GENERIC_OPTIONS[@]}"
+      echo ""
+    elif [[ "$line" == *$PLACEHOLDER_COMMANDS* ]]; then
+      printf "\t\t\"%s\"\n" "${COMMANDS[@]}"
+    elif [[ "$line" == *$PLACEHOLDER_COMMAND_OPTIONS* ]]; then
+      for i in "${!OPTIONS[@]}"; do
+        local known_options="${OPTIONS[i]}"
+        local command_name="${known_options%;*}"
+        local options="${known_options#*; }"
+        printf "      %s)\n        COMPREPLY=( \$( compgen -W '%s'\"\$GENERIC_OPTIONS\" -- \"\$cur\" ) )\n        return 0;\n      ;;\n" \
+          "$command_name" \
+          "$options"
+      done
+    else
+      echo "$line"
+    fi
+  done < "$TEMPLATE"
+}
+
+function process_options() {
+  if [ "$#" -ne 2 ]; then
+    return 1
+  fi
+  local command_name="$1"
+  local options="$2"
+
+  if [ "$command_name" = "general" ]; then
+    GENERIC_OPTIONS=$(printf "%s\n%s" "$GENERIC_OPTIONS" "$options")
+  else
+    added=""
+    for i in "${!OPTIONS[@]}"; do
+      local known_options="${OPTIONS[i]}"
+      if [[ "$known_options" == $command_name\;* ]]; then
+        OPTIONS[$i]="$known_options $options"
+        added="1"
+      fi
+    done
+    if [ -z "$added" ]; then
+      OPTIONS+=("$command_name; $options")
+    fi
+  fi
+
+  return 0
+}
+
+function split_options() {
+  if [ "$#" -ne 1 ]; then
+    return 1
+  fi
+  local options_str="$1"
+
+  if ! [[ $options_str == *\) ]]; then
+    return 2
+  fi
+
+  options_str="${options_str::-1}"
+
+  local options
+  while IFS='|' read -ra options; do
+    echo "${options[@]}"
+  done <<< "$options_str"
+}
+
+function search_options() {
+  command_name=""
+  options=""
+
+  while IFS= read -r line; do
+    line="$(echo "$line" | xargs)"
+    if [[ "$line" == \#\** ]]; then
+      if [ -z "$command_name" ]; then
+        command_name="${line:3}"
+        continue
+      fi
+    else # end if [[ "$line" == \#\** ]]
+      if [ -z "$command_name" ]; then
+        continue
+      fi
+      options=$(split_options "$line") || { echo "[ERROR] failed to parse options."; exit 1; }
+      process_options "$command_name" "${options[@]}" || { echo "[ERROR] failed to process options."; exit 1; }
+
+      command_name=""
+      options=""
+    fi # end else [[ "$line" == \#\** ]]
+  done < "$LYSITHEA_ABS"
+}
+
+function search_commands() {
+  local command_name=""
+  while IFS= read -r line; do
+    line="$(echo "$line" | xargs)"
+    if [[ "$line" == \#\@* ]]; then
+      if [ -z "$command_name" ]; then
+        command_name="${line:3}"
+        continue
+      fi
+    else # end if [[ "$line" == \#\** ]]
+      if [ -z "$command_name" ]; then
+        continue
+      fi
+      COMMANDS+=("$command_name")
+
+      command_name=""
+    fi # end else [[ "$line" == \#\** ]]
+  done < "$LYSITHEA_ABS"
+}
+
+function main() {
+  search_commands
+  search_options
+  if [ -n "$LYSITHEA_GEN_COMP_STDOUT" ]; then
+    write_completion
+  else
+    write_completion > "$OUTPUT_FILE"
+  fi
+}
+
+main "$@"
