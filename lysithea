@@ -294,7 +294,7 @@ function parse_arguments() {
     memo)
       _set_command memo
       shift
-      MEMO_CONTENT=$(printf "%s" "$@")
+      MEMO_CONTENT=$(printf "%s " "$@")
       break
     ;;
     # unknown
