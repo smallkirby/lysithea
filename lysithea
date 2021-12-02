@@ -291,6 +291,12 @@ function parse_arguments() {
       _set_command config
       shift
     ;;
+    memo)
+      _set_command memo
+      shift
+      MEMO_CONTENT=$(printf "%s" "$@")
+      break
+    ;;
     # unknown
     *)
       _error_exit $INVALID_ARGS "unknown command: %s" "$1"
@@ -387,6 +393,9 @@ function main() {
     ;;
   config)
     configure_interactive
+    ;;
+  memo)
+    write_memo "$MEMO_CONTENT"
     ;;
   *)
     _error_exit $UNKNOWN_ERROR "command not found."

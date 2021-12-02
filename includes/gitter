@@ -45,14 +45,22 @@ function exploit_callback() {
   fi
 
   git add .
-  git commit -m "$(printf $GIT_FORMAT)"
+  git commit -m "$(printf "%s" "$GIT_FORMAT")"
 }
 
 function list_logs() {
   local logs
   readarray -t logs < <(git log | grep Date | sed 's/Date://')
   for i in "${!logs[@]}"; do
-    printf "%d\t: %s\n" "$i" "${logs[$i]}"
+    local head=$(printf "HEAD@{%s}" "$i")
+    readarray -t messages < <(git log --format=%B -n 1 "$head")
+    local message=$(printf "\n\t%s" "${messages[@]:1}")
+    message=${message:1}
+    if [ "${#messages[@]}" -gt "2" ]; then
+      printf "%d\t: %s\n%s\n" "$i" "${logs[$i]}" "$(echo -e "$message")"
+    else
+      printf "%d\t: %s\n" "$i" "${logs[$i]}"
+    fi
   done
 }
 
@@ -97,4 +105,14 @@ function get_log_all() {
   else
     less -R < <(echo "$output")
   fi
+}
+
+function write_memo() {
+  logs="$(git --no-pager log)"
+  if [ -z "$logs" ]; then
+    _error_exit "$OPERATION_FAILED" "No available logs."
+  fi
+  local current_message="$(git log --format=%B -n 1)"
+  local new_message=$(printf "%s\n\n%s" "$current_message" "$1")
+  git commit --amend -m "$new_message"
 }

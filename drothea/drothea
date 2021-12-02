@@ -17,7 +17,7 @@ VERSION=1.0.0
 
 vecho() {
   if [ -n "$VERBOSE" ]; then
-    echo "$@"
+    echo -e "$@"
   fi
 }
 
