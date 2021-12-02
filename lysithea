@@ -6,6 +6,7 @@ VERSION=1.0.0
 
 # configs
 IAM=$(basename $0)
+IAMABS=$(realpath $0)
 EXTRACTED=extracted
 ROOTFS=rootfs.cpio
 SNIPPET_BASE=$HOME/$IAM # https://github.com/smallkirby/snippet
@@ -249,6 +250,8 @@ function parse_arguments() {
       ERROR_ASKED=$1
       shift
       ;;
+    #@ local
+    #@ run QEMU script locally
     exploit | local)
       _set_command exploit
       shift
@@ -258,6 +261,8 @@ function parse_arguments() {
       remote_parse_arguments "$@"
       shift "$NUM_ARGUMENTS_PROCESSED"
       ;;
+    #@ remote
+    #@ run exploit on remote host
     remote)
       _set_command exploit
       shift
@@ -313,26 +318,38 @@ function version() {
   printf "Lysithea v%s\n" "$VERSION"
 }
 
+function do_usage() {
+  local command_name=""
+  local command_description=""
+  while IFS= read -r line; do
+    line="$(echo $line | xargs)"
+    if [[ "$line" == \#@* ]]; then
+      if [ -z "$command_name" ]; then
+        command_name="${line:3}"
+        continue
+      else
+        command_description="${line:3}"
+        continue
+      fi # endif [ -z "$command_name" ]
+    else # else[[ "$line" == \#@* ]]
+      if [ -z "$command_name" ]; then
+        continue
+      fi
+      if [ -z "$command_description" ]; then
+        _error_exit "$UNKNOWN_ERROR" "Failed to generate usage text."
+      fi
+      printf "  %-15s\t\t: %s\n" "$command_name" "$command_description"
+      command_name=""
+      command_description=""
+    fi # end else [[ "$line" == \#@* ]]
+  done < "$IAMABS"
+}
+
 function usage() {
   version
   echo ""
   echo "Usage:"
-  printf "  init      : init the pwn workspace\n"
-  printf "  extract   : extract filesystem\n"
-  printf "  compress  : compress filesystem\n"
-  printf "  run       : run QEMU\n"
-  printf "  build     : compile exploit for local usage\n"
-  printf "  error     : show error description\n"
-  printf "  local     : run QEMU script\n"
-  printf "  exploit   : synonym of 'local'\n"
-  printf "  remote    : run exploit on remote host\n"
-  printf "  logs      : show list of logs\n"
-  printf "  log       : show QEMU log of given time\n"
-  printf "  fetch     : fetch given time of exploit\n"
-  printf "  drothea   : run kernel configuration checker in QEMU\n"
-  printf "  config    : configure default options interactively\n"
-  printf "  version   : show version info\n"
-  printf "  help      : show this help\n"
+  do_usage
 }
 
 function main() {
@@ -340,38 +357,58 @@ function main() {
   local argv="$@"
   parse_arguments $argv
 
+  #@ help
+  #@ show this help
   if [ -n "$HELP" ]; then
     usage
     exit 0
   fi
 
+  #@ version
+  #@ show version info
   if [ -n "$SHOW_VERSION" ]; then
     version
     exit 0
   fi
 
   case $COMMAND in
+  #@ init
+  #@ init the pwn workspace
   init)
     init
     ;;
+  #@ extract
+  #@ extract filesystem
   extract)
     extract_filesystem $FORCE
     ;;
+  #@ build
+  #@ compile exploit for local usage
   build)
     compile_exploit
     ;;
+  #@ compress
+  #@ compress filesystem
   compress)
     compress_filesystem
     ;;
+  #@ error
+  #@ show error description
   error)
     error2str $ERROR_ASKED
     ;;
+  #@ exploit
+  #@ synonym of 'local'
   exploit)
     exploit
     ;;
+  #@ logs
+  #@ show list of logs
   logs)
     list_logs
     ;;
+  #@ log
+  #@ show QEMU log of given time
   log)
     if [ -n "$SHOW_ALL_LOG" ]; then
       get_log_all
@@ -382,18 +419,26 @@ function main() {
       get_log_single "$LOG_TARGET_INDEX"
     fi
     ;;
+  #@ fetch
+  #@ fetch given time of exploit
   fetch)
     if [ -z "$LOG_TARGET_INDEX" ]; then
       _error_exit "$INVALID_ARGS" "Specify log index"
     fi
     get_exploit "$LOG_TARGET_INDEX"
     ;;
+  #@ drothea
+  #@ run kernel configuration checker in QEMU
   drothea)
     run_drothea_in_qemu
     ;;
+  #@ config
+  #@ configure default options interactively
   config)
     configure_interactive
     ;;
+  #@ memo
+  #@ leave memo for latest exploit log
   memo)
     write_memo "$MEMO_CONTENT"
     ;;
