@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout
+    - uses: actions/checkout@master
 
     - name: Compare diff of pushed completion and generated completion
       run: LYSITHEA_GEN_COMP_STDOUT=1 /bin/bash ./build/gen-completion > tmp && diff ./tmp ./lysithea.completion.bash 
