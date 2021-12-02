@@ -29,7 +29,7 @@ vecho() {
 test_mmap_min() {
   local SAFE_MIN_ADDR="4096"
   local min_addr="$(cat /proc/sys/vm/mmap_min_addr)"
-  if ! [ "$SAFE_MIN_ADDR" -ge "$min_addr" ]; then
+  if ! [ "$SAFE_MIN_ADDR" -le "$min_addr" ]; then
     echo "[!] mmap_min_addr is smaller than $SAFE_MIN_ADDR: $min_addr"
   fi
 }
