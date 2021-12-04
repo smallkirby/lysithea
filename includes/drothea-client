@@ -112,7 +112,7 @@ function run_drothea_in_qemu() {
   done
 
   # run drothea
-  echo "./drothea --verbose" > "$DROTHEA_PIPE".in
+  echo "/drothea --verbose" > "$DROTHEA_PIPE".in
   read -r line <"$DROTHEA_PIPE".out # skip first line
   echo "==============================="
   while :; do
