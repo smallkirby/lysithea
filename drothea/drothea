@@ -78,6 +78,15 @@ check_kversion() {
   vecho "\t$kversion"
 }
 
+check_kallsyms_all() {
+  res="$(cat /proc/kallsyms | grep ' D ')"
+  if [ -n "$res" ]; then
+    echo "[+] CONFIG_KALLSYMS_ALL is disabled."
+  else
+    echo "[-] CONFIG_KALLSYMS_ALL is enabled."
+  fi
+}
+
 utest_kaslr_enabled() {
   cmdline="$(cat /proc/cmdline)"
   if [ "${cmdline#*nokaslr}" = "$cmdline" ]; then
@@ -111,6 +120,7 @@ run_ingrid() {
 do_tests() {
   # misc info
   check_kversion
+  check_kallsyms_all
 
   # kernel exploitable configuration
   test_mmap_min
