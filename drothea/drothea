@@ -98,11 +98,11 @@ utest_kptr_restrict() {
 ### Main ##############
 
 run_ingrid() {
-  if [ -f ingrid ]; then
+  if [ -f /ingrid ]; then
     if [ -n "$VERBOSE" ]; then
-      ./ingrid --verbose
+      /ingrid --verbose
     else
-      ./ingrid
+      /ingrid
     fi
   fi
 }
