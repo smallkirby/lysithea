@@ -5,8 +5,8 @@ Here, we use `lkgit` from [`TSGCTF2021`](TBD) as en example.
 
 ## Init
 
-First, you download attachment of the challenge and extract it in a working directory.  
-In this case, the challenge has typical structure and distribution files like below:
+First, you download attachment files of the challenge and extract it in a working directory.  
+In this case, the challenge has typical structure and distribution files:
 
 ```dist.sh
 .
@@ -23,7 +23,7 @@ In this case, the challenge has typical structure and distribution files like be
         └── lkgit.c
 ```
 
-Then, what you have to do first is `lysithea init`. It copies some assets from `lysithea` directory. Also, it checks working directory and configure itself if it can for later operations.
+Then, what you have to do first is `lysithea init`. It copies some raw assets from `lysithea` directory. Also, it checks working directory and configures itself if possible for later operations.
 
 ```init.sh
 $ lysithea init
@@ -121,7 +121,7 @@ Ingrid v1.0.0
 [.] cleaning Drothea...
 ```
 
-It stars QEMU automatically and run `drothea` and `ingrid` inside it. They check kernel configurations and report you if the kernel has weak configurations. In this example, `drothea` reports that krenel version is 5.10.25, unprivileged uffd is allowed, unprivileged ebpf is allowed, and etc. It also says that KASLR and kptr restriction is enabled, which make debugging harder.
+It stars QEMU automatically and runs `drothea` and `ingrid` inside it. They check kernel configurations and report you if the kernel has weak configurations. In this example, `drothea` reports that kernel version is 5.10.25, unprivileged uffd is allowed, unprivileged ebpf is allowed, and etc. It also says that KASLR and kptr restriction is enabled, which make debugging harder.
 
 
 ## writing exploit and try on local
@@ -151,7 +151,7 @@ Boot took 1.90 seconds
 hogehoge
 ```
 
-`lysithea` compiles your exploit, copies it in extracted filesystem, re-compress filesystem, and start QEMU to run exploit.
+`lysithea` compiles your exploit, copies it in an extracted filesystem, re-compresses the filesystem, and starts QEMU to run exploit.
 
 After this try, you enter `Ctrl+C` and notice that below message is shown:
 
@@ -178,7 +178,7 @@ $ lysithea logs
 3       :    Fri Dec 3 20:58:28 2021 +0900
 ```
 
-Then you can select index to check output of that try by `lysithea log`:
+Then you can select index to check QEMU output of that try by `lysithea log`:
 
 ```log.sh
 $ lysithea log 0
@@ -198,7 +198,7 @@ TSGCTF{this_is_fake_flag}
 / #
 ```
 
-If it is snapshot you want to rollback, you can fetch the exploit of that time by `lysithea fetch`. By default, `lysithea fetch` uses pager to view your exploit, which is useful when you just check some point of it. If you don't want to use pager to pipe the output, you can specify `--no-pager` option:
+If it is the very snapshot you want to rollback to, you can fetch the exploit of that time by `lysithea fetch`. By default, `lysithea fetch` uses pager to view your exploit, which is useful when you just check some parts of it. If you don't want to use pager to pipe the output, you can specify `--no-pager` option:
 
 ```fetch-no-pager.sh
 $ lysithea fetch 1 --no-pager | head
@@ -237,7 +237,7 @@ $ lysithea logs
 
 ### You don't wannna leave logs?
 
-Suppose you know some tries you try from now on are just test, and you don't want to leave a log to keep logs clean. You can configure `lysithea` interactively by `lysithea config`:
+Suppose you know some tries you are to do from now on are just test, and you don't want to leave a log to keep logs clean. You can configure `lysithea` interactively by `lysithea config`:
 
 ```config.sh
 $ lysithea config
@@ -255,7 +255,7 @@ QEMUSCRIPT=./run.sh.dev
  ('q' to quit) >
 ```
 
-In this csase, you can change configuration by `nolog`. After it, no logs are taken. If you re-enable logging, you can configurate `lysithea` in the same way.
+In this case, you can change configuration by `nolog`. After it, no logs are taken. If you want to re-enable logging, you can configurate `lysithea` in the same way.
 
 ```config-log.sh
  ('q' to quit) > nolog
@@ -278,7 +278,7 @@ You can edit other configurations also by `lysithea config`, such as build optio
 
 ## run exploit in remote host
 
-Congrats, you write exploit which works well locally. The you have try it in remote host. Just type: `lysithea remote`:
+Congrats, you write exploit which works well locally. Then you have try it in remote host. Just type: `lysithea remote`:
 
 ```remote.sh
 $ lysithea remote --host skbctf.skb.pw --port 25252
@@ -299,7 +299,7 @@ Executing busybox-1.32.1-r6.trigger
 [ ] END of life...
 ```
 
-It automatically compiles your exploit by using light-weight musl libc, strips and gzip and base64 encodes it, send it to remote host, and run it. The only thing you have to do is to specify host and port.
+It automatically compiles your exploit by using light-weight musl libc, strips and gzip and base64 encodes it, sends it to remote host, and runs it. The only thing you have to do is to specify host and port.
 
 ### it's boring to specify port and host?
 
@@ -332,12 +332,12 @@ Usage:
   memo                          : leave memo for latest exploit log
 ```
 
-This help message generated from annotations in source code of `lysithea`, hence it is always up-to-new.
+This help message is generated from annotations in the source code of `lysithea`, hence it is always up-to-new.
 
 ## want completion?
 
 Ofcourse you can use tab-completion of `lysithea commands`. To install completion file, exec `./install.sh` in root directory of `lysithea`.
-This completion file is also generated automatically from annotations in source code. It is always up-to-new.
+This completion file is also generated automatically from annotations in the source code. It is always up-to-new.
 
 ## `lysithea` is only for Bash?
 
@@ -347,4 +347,4 @@ This completion file is also generated automatically from annotations in source 
 
 ## Contributions and Suggestions
 
-`lysithea` is now under construction. We appreciate it if you have some suggestions for `lysithea`. Please create issues or PR on this Github as you like. Question is also welcome in issues or somewhere. You can directry contact me on [Twiter](https://twitter.com/smallkirby).
+`lysithea` is now under construction. We appreciate it if you have some suggestions for `lysithea`. Please create issues or PR on this Github as you like. Question is also welcome in Issue or somewhere. You can directly contact me on [Twiter](https://twitter.com/smallkirby).
