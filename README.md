@@ -5,10 +5,7 @@
 
 # It is...
 
-Small cute snippet manager for CTF kernel pwn challenges.  
-
-This is an expansion of [`mr.sh`](https://github.com/smallkirby/snippet/blob/master/exploit/kernel/mr.sh).  
-
+Small cute utils for CTF kernel pwn challenges.  
 
 # Installation
 
@@ -106,26 +103,31 @@ Ingrid v1.0.0
 
 # Usage
 
+For all up-to-date commands, do `lysithea help` on your host.
+
+
 ```help.txt
 $ lysithea help
+[-] config file not found.
 Lysithea v1.0.0
 
 Usage:
-  init      : init the pwn workspace
-  extract   : extract filesystem
-  compress  : compress filesystem
-  run       : run QEMU
-  build     : compile exploit for local usage
-  error     : show error description
-  local     : run QEMU script
-  exploit   : synonym of 'local'
-  remote    : run exploit on remote host
-  logs      : show list of logs
-  log       : show QEMU log of given time
-  fetch     : fetch given time of exploit
-  drothea   : run kernel configuration checker in QEMU
-  version   : show version info
-  help      : show this help
+  local                         : run QEMU script locally
+  remote                        : run exploit on remote host
+  help                          : show this help
+  version                       : show version info
+  init                          : init the pwn workspace
+  extract                       : extract filesystem
+  build                         : compile exploit for local usage
+  compress                      : compress filesystem
+  error                         : show error description
+  exploit                       : synonym of local
+  logs                          : show list of logs
+  log                           : show QEMU log of given time
+  fetch                         : fetch given time of exploit
+  drothea                       : run kernel configuration checker in QEMU
+  config                        : configure default options interactively
+  memo                          : leave memo for latest exploit log
 ```
 
 # Tutorial
