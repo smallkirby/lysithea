@@ -82,6 +82,16 @@ function init() {
   return 0
 }
 
+function clean() {
+  local CLEAN_TARGET=( "drothea" "ingrid" "sender.py"  ".gitignore" ".git" "$QEMUSCRIPT" )
+  if [ -n "$CLEAN_ALL" ]; then
+    CLEAN_TARGET+=( ".lysithea.conf" ".lysithea.log" "extracted" )
+  fi
+  for target in "${CLEAN_TARGET[@]}"; do
+    rm -rf "$target"
+  done
+}
+
 # $1: force replace
 function extract_filesystem() {
   if [ $# -ge 2 ]; then
@@ -205,6 +215,27 @@ function remote_parse_arguments() {
   NUM_ARGUMENTS_PROCESSED=$num_processed
 }
 
+function clean_parse_arguments() {
+  local num_processed=0
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+
+    case $key in
+      #* clean
+      -a | --all)
+        CLEAN_ALL="1"
+        shift
+        num_processed=$((num_processed+1))
+        ;;
+      *)
+        break
+        ;;
+    esac
+  done
+
+  NUM_ARGUMENTS_PROCESSED=$num_processed
+}
+
 function parse_arguments() {
   while [[ $# -gt 0 ]]; do
     key="$1"
@@ -310,6 +341,14 @@ function parse_arguments() {
       _set_command memo
       shift
       MEMO_CONTENT=$(printf "%s " "$@")
+      break
+    ;;
+    clean)
+      _set_command clean
+      shift
+      NUM_ARGUMENTS_PROCESSED=0
+      clean_parse_arguments "$@"
+      shift "$NUM_ARGUMENTS_PROCESSED"
       break
     ;;
     # unknown
@@ -451,6 +490,11 @@ function main() {
   #@ leave memo for latest exploit log
   memo)
     write_memo "$MEMO_CONTENT"
+    ;;
+  #@ clean
+  #@ clean current directory
+  clean)
+    clean
     ;;
   *)
     _error_exit $UNKNOWN_ERROR "command not found."
