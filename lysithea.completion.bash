@@ -24,6 +24,7 @@ _lysithea()
 		"drothea"
 		"config"
 		"memo"
+		"clean"
   )
 
   local GENERIC_OPTIONS='
@@ -53,6 +54,10 @@ _lysithea()
       ;;
       remote)
         COMPREPLY=( $( compgen -W '-p   --port -H   --host --nobuild'"$GENERIC_OPTIONS" -- "$cur" ) )
+        return 0;
+      ;;
+      clean)
+        COMPREPLY=( $( compgen -W '-a   --all'"$GENERIC_OPTIONS" -- "$cur" ) )
         return 0;
       ;;
       *)
