@@ -9,6 +9,8 @@ Small cute utils for CTF kernel pwn challenges.
 
 # Installation
 
+Just exec `install.sh`, which installs required dependencies. All the deps are listed in `build/pkglist.required`.
+
 ```install.sh
 git clone https://github.com/smallkirby/lysithea.git
 cd ./lysithea
