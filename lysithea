@@ -7,6 +7,7 @@ VERSION=1.0.0
 # configs
 IAM=$(basename $0)
 IAMABS=$(realpath $0)
+IAMDIR=$(dirname $IAMABS)
 EXTRACTED=extracted
 ROOTFS=rootfs.cpio
 SNIPPET_BASE=$HOME/$IAM # https://github.com/smallkirby/snippet
