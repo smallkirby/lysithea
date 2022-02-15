@@ -1,0 +1,201 @@
+#!/bin/bash
+[ -n "$H_GUARD_FS" ] && return
+readonly H_GUARD_FS=1
+
+
+source "$(realpath $(dirname $0))/includes/errors"
+source "$(realpath $(dirname $0))/includes/utils"
+
+readonly FILETYPE_CPIO=1
+readonly FILETYPE_EXT4=2
+readonly FILETYPE_GZIP=3
+readonly FILETYPE_UNKNOWN=250
+readonly FILETYPE_ERROR=255
+function check_filesytem_type() {
+  if [ $# -ne 1 ]; then
+    echo $FILETYPE_ERROR
+    return
+  fi
+  filename="$1"
+
+  if [ "$filename" == "*.cpio$" ]; then
+    echo $FILETYPE_CPIO
+    return
+  elif [ "$filename" == "*.ext4$" ]; then
+    echo $FILETYPE_EXT4
+    return
+  elif [ "$filename" == "*.gzip$" ]; then
+    echo $FILETYPE_GZIP
+    return
+  fi
+
+  file_output=$(file "$filename")
+  if echo "$file_output" | grep -q "cpio archive"; then
+    echo $FILETYPE_CPIO
+    return
+  elif echo "$file_output" | grep -q "ext4"; then
+    echo $FILETYPE_EXT4
+    return
+  elif echo "$file_output" | grep -q "gzip compressed"; then
+    echo $FILETYPE_GZIP
+    return
+  fi
+
+  echo "$FILETYPE_UNKNOWN"
+}
+
+function extract_filesystem_cpio() {
+  echo "[+] Extracting filesystem into '$EXTRACTED' as cpio..."
+  mkdir "$EXTRACTED"
+  cd $EXTRACTED || return 3
+
+  result=$(cpio -idv 2>/dev/null <../$ROOTFS)
+  cd ..
+  return $result
+}
+
+# NOTE: Thsi function assumes the content of gziped file is .cpio.
+function extract_filesystem_gzip() {
+  echo "[+] Extracting filesystem into '$EXTRACTED' as gzip..."
+  echo "[.]    NOTE: Assuming the content of ziped file is cpio archived file."
+  mkdir $EXTRACTED
+
+  cd $EXTRACTED || return 3
+  result=$(zcat ../$ROOTFS | cpio -idmv 2>/dev/null)
+  cd ..
+  return $result
+}
+
+function extract_filesystem_ext4() {
+  echo "[+] Extracting filesystem into '$EXTRACTED' as ext4..."
+  mkdir $EXTRACTED
+  result=$(sudo mount $ROOTFS $EXTRACTED)
+  cd ..
+  return $result
+}
+
+function extract_filesystem() {
+  if [ $# -ge 2 ]; then
+    _error_exit $INVALID_ARGS "invalid # of args passed to extract_filesystem()."
+    return 1
+  fi
+
+  if [ "$1" = 1 ]; then
+    local FORCE_EXTRACT=1
+  fi
+
+  if ! [ -f $ROOTFS ]; then
+    _error_exit $FILE_NOT_FOUND "filesystem '$ROOTFS' not found."
+    return 2
+  fi
+
+  if [ -d $EXTRACTED ]; then
+    if [ -z "$FORCE_EXTRACT" ] || [ $FORCE_EXTRACT -ne 1 ]; then
+      _error_exit $FILE_ALREADY_EXIST "directory '$EXTRACTED' already exists. Specify '--force' to replace it."
+    else
+      echo "[+] Removing $EXTRACTED."
+      sudo umount $EXTRACTED 2>/dev/null || echo -ne ""
+      sudo rm -rf $EXTRACTED || _error_exit $SUDO_NOT_ALLOWED "failed to remove directory."
+    fi
+  fi
+
+  filetype=$(check_filesytem_type "$ROOTFS")
+  case $filetype in
+    "$FILETYPE_CPIO")
+      extract_filesystem_cpio
+      ;;
+    "$FILETYPE_EXT4")
+      extract_filesystem_ext4
+      ;;
+    "$FILETYPE_GZIP")
+      extract_filesystem_gzip
+      ;;
+    "$FILETYPE_UNKNOWN")
+      _error_exit "$OPERATION_FAILED" "unknown file format of file image: $ROOTFS"
+      ;;
+    "$FILETYPE_ERROR")
+      _error_exit "$UNKNOWN_ERROR" "error in function check_filesystem_type()."
+      ;;
+    *)
+      _error_exit "$UNKNOWN_ERROR" "unknown return value of function check_filesystem_type()."
+      ;;
+  esac
+
+  return_value="$?"
+  if [ $return_value -eq 0 ]; then
+    echo "[+] extraction success"
+    return 0
+  else
+    _error_exit "$OPERATION_FAILED" "extraction failed ($return_value)"
+  fi
+}
+
+function compress_filesystem_cpio() {
+  chmod 777 -R $EXTRACTED
+  cd $EXTRACTED
+  find ./ -print0 | cpio --owner root --null -o --format=newc >../$ROOTFS || _error_exit $UNKNOWN_ERROR "failed to compress rootfs"
+  cd ../
+  return 0
+}
+
+# NOTE: Thsi function assumes the content of gziped file is .cpio.
+function compress_filesystem_gzip() {
+  compress_filesystem_cpio
+  mv $ROOTFS tmproot
+  gzip tmproot
+  mv tmproot.gz $ROOTFS
+  return 0
+}
+
+function compress_filesystem_ext4() {
+  sudo umount $EXTRACTED || echo "[.] failed to umount $EXTRACTED. it seems not mounted."
+  return 0
+}
+
+function compress_filesystem() {
+  echo "[+] re-compressing filesystem..."
+  if ! [ -d "$EXTRACTED" ]; then
+    _error_exit $FILE_NOT_FOUND "directry '$EXTRACTED' not found"
+  fi
+  local filetype=$(check_filesytem_type "$ROOTFS")
+  if [ $filetype -ne "$FILETYPE_EXT4" ]; then
+    rm -f $ROOTFS
+  fi
+
+  # copy Drothea
+  if [ -f drothea ]; then
+    cp drothea "$EXTRACTED/$EXPLOIT_PATH"
+  else
+    vecho "[-] drothea not found. skipping"
+  fi
+
+  # copy Ingrid
+  if [ -f ingrid ]; then
+    cp ingrid "$EXTRACTED/$EXPLOIT_PATH"
+  else
+    vecho "[-] ingrid not found. skipping"
+  fi
+
+  case "$filetype" in
+    "$FILETYPE_CPIO")
+      compress_filesystem_cpio
+      ;;
+    "$FILETYPE_EXT4")
+      compress_filesystem_ext4
+      ;;
+    "$FILETYPE_GZIP")
+      compress_filesystem_gzip
+      ;;
+    "$FILETYPE_UNKNOWN")
+      _error_exit "$OPERATION_FAILED" "unknown file format of file image: $ROOTFS"
+      ;;
+    "$FILETYPE_ERROR")
+      _error_exit "$UNKNOWN_ERROR" "error in function check_filesystem_type()."
+      ;;
+    *)
+      _error_exit "$UNKNOWN_ERROR" "unknown return value of function check_filesystem_type()."
+      ;;
+  esac
+
+  return $?
+}

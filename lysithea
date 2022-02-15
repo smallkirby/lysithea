@@ -13,7 +13,7 @@ ROOTFS=rootfs.cpio
 SNIPPET_BASE=$HOME/$IAM # https://github.com/smallkirby/snippet
 QEMUSCRIPT=run.sh
 
-QEMUSCRIPT_CANDS=( "run" "start" )
+readonly QEMUSCRIPT_CANDS=( "run" "start" )
 
 # includes
 source "$(realpath $(dirname $0))/includes/errors"
@@ -21,6 +21,7 @@ source "$(realpath $(dirname $0))/includes/configer"
 source "$(realpath $(dirname $0))/includes/utils"
 source "$(realpath $(dirname $0))/includes/exploit"
 source "$(realpath $(dirname $0))/includes/gitter"
+source "$(realpath $(dirname $0))/includes/fs"
 source "$(realpath $(dirname $0))/includes/drothea-client"
 
 function init() {
@@ -91,50 +92,6 @@ function clean() {
   for target in "${CLEAN_TARGET[@]}"; do
     rm -rf "$target"
   done
-}
-
-# $1: force replace
-function extract_filesystem() {
-  if [ $# -ge 2 ]; then
-    _error_exit $INVALID_ARGS "invalid # of args passed to extract_filesystem()."
-    return 1
-  fi
-
-  if [ "$1" = 1 ]; then
-    local FORCE_EXTRACT=1
-  fi
-
-  if ! [ -f $ROOTFS ]; then
-    _error_exit $FILE_NOT_FOUND "filesystem '$ROOTFS' not found."
-    return 2
-  fi
-
-  if [ -d $EXTRACTED ]; then
-    if [ -z "$FORCE_EXTRACT" ] || [ $FORCE_EXTRACT -ne 1 ]; then
-      _error_exit $FILE_ALREADY_EXIST "directory '$EXTRACTED' already exists. Specify '--force' to replace it."
-    else
-      echo "[+] Removing $EXTRACTED."
-      sudo rm -rf $EXTRACTED || _error_exit $SUDO_NOT_ALLOWED "failed to remove directory."
-    fi
-  fi
-
-  echo "[+] Extracting filesystem into '$EXTRACTED'"
-  mkdir $EXTRACTED
-  filetype=$(file $ROOTFS)
-
-  cd $EXTRACTED || return 3
-  if [[ $filetype == *"gzip"* ]]; then
-    echo "[+] found gzipped file system."
-    zcat ../$ROOTFS | cpio -idmv
-  else
-    cpio -idv 2>/dev/null <../$ROOTFS
-  fi
-
-  if [ $? -eq 0 ]; then
-    echo "[+] extraction success"
-  fi
-  cd ../
-  return 0
 }
 
 function _set_command() {

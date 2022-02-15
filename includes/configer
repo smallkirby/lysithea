@@ -156,9 +156,9 @@ function _do_configure_interactive() {
         echo "[+] set $target_config to '$rootfs_name'"
       fi
     ;;
-    qemuscript=*)
+    qemu=*)
       local target_config="QEMUSCRIPT"
-      local rootfs_name="${userinput#*qemus=}"
+      local rootfs_name="${userinput#*qemu=}"
       if [ -z "$rootfs_name" ]; then
         echo "[-] specify rootfs name."
       else
