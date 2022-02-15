@@ -245,8 +245,10 @@ function parse_arguments() {
       ;;
     error | -e)
       _set_command error
-      shift
-      ERROR_ASKED=$1
+      if [ $# -gt 1 ]; then
+        shift
+        ERROR_ASKED=$1
+      fi
       shift
       ;;
     #@ local
@@ -402,7 +404,11 @@ function main() {
   #@ error
   #@ show error description
   error)
-    error2str $ERROR_ASKED
+    if [ -z "$ERROR_ASKED" ]; then
+      echo "usage: lysithea error <ERROR NUMBER>"
+    else
+      error2str $ERROR_ASKED
+    fi
     ;;
   #@ exploit
   #@ synonym of 'local'
