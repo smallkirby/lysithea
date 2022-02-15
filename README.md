@@ -141,6 +141,7 @@ Usage:
   drothea                       : run kernel configuration checker in QEMU
   config                        : configure default options interactively
   memo                          : leave memo for latest exploit log
+  clean                         : clean current directory
 ```
 
 # Tutorial
