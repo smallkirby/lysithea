@@ -11,7 +11,7 @@ readonly FILETYPE_EXT4=2
 readonly FILETYPE_GZIP=3
 readonly FILETYPE_UNKNOWN=250
 readonly FILETYPE_ERROR=255
-function check_filesytem_type() {
+function check_filesystem_type() {
   if [ $# -ne 1 ]; then
     echo $FILETYPE_ERROR
     return
@@ -99,7 +99,7 @@ function extract_filesystem() {
     fi
   fi
 
-  filetype=$(check_filesytem_type "$ROOTFS")
+  filetype=$(check_filesystem_type "$ROOTFS")
   case $filetype in
     "$FILETYPE_CPIO")
       extract_filesystem_cpio
@@ -157,7 +157,7 @@ function compress_filesystem() {
   if ! [ -d "$EXTRACTED" ]; then
     _error_exit $FILE_NOT_FOUND "directry '$EXTRACTED' not found"
   fi
-  local filetype=$(check_filesytem_type "$ROOTFS")
+  local filetype=$(check_filesystem_type "$ROOTFS")
   if [ $filetype -ne "$FILETYPE_EXT4" ]; then
     rm -f $ROOTFS
   fi
