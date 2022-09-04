@@ -192,19 +192,18 @@ function compress_filesystem() {
     rm -f $ROOTFS
   fi
 
-  # copy Drothea
-  if [ -f drothea ]; then
-    cp drothea "$EXTRACTED/$EXPLOIT_PATH" || echo "[-] failed to copy drothea, root required?"
-  else
-    vecho "[-] drothea not found. skipping"
-  fi
-
-  # copy Ingrid
-  if [ -f ingrid ]; then
-    cp ingrid "$EXTRACTED/$EXPLOIT_PATH" || echo "[-] failed to copy ingrid, root required?"
-  else
-    vecho "[-] ingrid not found. skipping"
-  fi
+  # copy Drothea and Ingrid
+  for f in "drothea" "ingrid"; do
+    echo $f
+    if [ -f $f ]; then
+      cp $f "$EXTRACTED/$EXPLOIT_PATH" || {
+        echo "[!] copying $f as root..."
+        sudo cp $f "$EXTRACTED/$EXPLOIT_PATH"
+      }
+    else
+      vecho "[-] $f not found. skipping"
+    fi
+  done
 
   case "$filetype" in
     "$FILETYPE_CPIO")
