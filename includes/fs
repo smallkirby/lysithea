@@ -9,6 +9,7 @@ source "$(realpath $(dirname $0))/includes/utils"
 readonly FILETYPE_CPIO=1
 readonly FILETYPE_EXT4=2
 readonly FILETYPE_GZIP=3
+readonly FILETYPE_QCOW=4
 readonly FILETYPE_UNKNOWN=250
 readonly FILETYPE_ERROR=255
 function check_filesystem_type() {
@@ -27,6 +28,8 @@ function check_filesystem_type() {
   elif [ "$filename" == "*.gzip$" ]; then
     echo $FILETYPE_GZIP
     return
+  elif [ "$filename" == "*.qcow2$" ]; then
+    echo $FILETYPE_QCOW
   fi
 
   file_output=$(file "$filename")
@@ -38,6 +41,9 @@ function check_filesystem_type() {
     return
   elif echo "$file_output" | grep -q "gzip compressed"; then
     echo $FILETYPE_GZIP
+    return
+  elif echo "$file_output" | grep -q "QEMU QCOW2 Image"; then
+    echo $FILETYPE_QCOW
     return
   fi
 
@@ -71,6 +77,15 @@ function extract_filesystem_ext4() {
   mkdir $EXTRACTED
   result=$(sudo mount $ROOTFS $EXTRACTED)
   cd ..
+  return $result
+}
+
+function extract_filesystem_qcow() {
+  echo "[+] Extracting filesystem into '$EXTRACTED' as qcow2..."
+  mkdir -p "$EXTRACTED"
+  sudo modprobe nbd max_part=8
+  sudo qemu-nbd --connect=/dev/nbd0 "$ROOTFS"
+  result=$(sudo mount /dev/nbd0 "$EXTRACTED") # TODO
   return $result
 }
 
@@ -109,6 +124,9 @@ function extract_filesystem() {
       ;;
     "$FILETYPE_GZIP")
       extract_filesystem_gzip
+      ;;
+    "$FILETYPE_QCOW")
+      extract_filesystem_qcow
       ;;
     "$FILETYPE_UNKNOWN")
       _error_exit "$OPERATION_FAILED" "unknown file format of file image: $ROOTFS"
@@ -152,26 +170,38 @@ function compress_filesystem_ext4() {
   return 0
 }
 
+function compress_filesystem_qcow() {
+  sudo umount $EXTRACTED || true
+  sudo qemu-nbd --disconnect /dev/nbd0
+  sudo rmmod nbd || echo "[!] failed to rmmod nbd, skipping..."
+  return 0
+}
+
 function compress_filesystem() {
   echo "[+] re-compressing filesystem..."
   if ! [ -d "$EXTRACTED" ]; then
     _error_exit $FILE_NOT_FOUND "directry '$EXTRACTED' not found"
   fi
+  if [ "$(ls -la "$EXTRACTED" | wc -l)" -le "3" ]; then
+    echo "[.] $EXTRACTED is empty, skipping..."
+    return 0
+  fi
+
   local filetype=$(check_filesystem_type "$ROOTFS")
-  if [ $filetype -ne "$FILETYPE_EXT4" ]; then
+  if [ $filetype -ne "$FILETYPE_EXT4" ] && [ $filetype -ne "$FILETYPE_QCOW" ]; then
     rm -f $ROOTFS
   fi
 
   # copy Drothea
   if [ -f drothea ]; then
-    cp drothea "$EXTRACTED/$EXPLOIT_PATH"
+    cp drothea "$EXTRACTED/$EXPLOIT_PATH" || echo "[-] failed to copy drothea, root required?"
   else
     vecho "[-] drothea not found. skipping"
   fi
 
   # copy Ingrid
   if [ -f ingrid ]; then
-    cp ingrid "$EXTRACTED/$EXPLOIT_PATH"
+    cp ingrid "$EXTRACTED/$EXPLOIT_PATH" || echo "[-] failed to copy ingrid, root required?"
   else
     vecho "[-] ingrid not found. skipping"
   fi
@@ -185,6 +215,9 @@ function compress_filesystem() {
       ;;
     "$FILETYPE_GZIP")
       compress_filesystem_gzip
+      ;;
+    "$FILETYPE_QCOW")
+      compress_filesystem_qcow
       ;;
     "$FILETYPE_UNKNOWN")
       _error_exit "$OPERATION_FAILED" "unknown file format of file image: $ROOTFS"
