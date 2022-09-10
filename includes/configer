@@ -109,6 +109,7 @@ function _do_configure_interactive() {
   echo "  exploit=<string>    : specify exploit filename."
   echo "  rootfs=<string>     : specify rootfs filename."
   echo "  qemu=<string>       : specify qemuscript filename."
+  echo "  include=<string>    : libraries to include in the exploit binary. (\"-lXXX -lYYY\" format)"
 
   read -r -p " ('q' to quit) > " userinput
   case "$userinput" in
@@ -165,6 +166,12 @@ function _do_configure_interactive() {
         write_config "$target_config" "$rootfs_name"
         echo "[+] set $target_config to '$rootfs_name'"
       fi
+    ;;
+    include=*)
+      local target_config="INCLUDE"
+      local includes="${userinput#*include=}"
+      write_config "$target_config" "$includes"
+      echo "[+] set $target_config to '$includes'"
     ;;
     q)
       exit 0
