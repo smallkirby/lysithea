@@ -110,6 +110,7 @@ function _do_configure_interactive() {
   echo "  rootfs=<string>     : specify rootfs filename."
   echo "  qemu=<string>       : specify qemuscript filename."
   echo "  include=<string>    : libraries to include in the exploit binary. (\"-lXXX -lYYY\" format)"
+  echo "  assets=<string>     : assets to include in the compressed filesystem. (\"./A.txt B.txt\" format)"
 
   read -r -p " ('q' to quit) > " userinput
   case "$userinput" in
@@ -172,6 +173,12 @@ function _do_configure_interactive() {
       local includes="${userinput#*include=}"
       write_config "$target_config" "$includes"
       echo "[+] set $target_config to '$includes'"
+    ;;
+    assets=*)
+      local target_config="CUSTOM_ASSETS"
+      local assets="${userinput#*assets=}"
+      write_config "$target_config" "$assets"
+      echo "[+] set $target_config to '$assets'"
     ;;
     q)
       exit 0

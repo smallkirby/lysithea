@@ -205,6 +205,15 @@ function compress_filesystem() {
     fi
   done
 
+  # copy custom assets
+  read_config "CUSTOM_ASSETS"
+  if ! [ -z "$CUSTOM_ASSETS" ]; then
+    cp $CUSTOM_ASSETS "$EXTRACTED" || {
+      echo "[!] copying $CUSTOM_ASSETS as root..."
+      sudo cp $CUSTOM_ASSETS "$EXTRACTED"
+    }
+  fi
+
   case "$filetype" in
     "$FILETYPE_CPIO")
       compress_filesystem_cpio
