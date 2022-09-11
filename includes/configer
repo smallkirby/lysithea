@@ -110,7 +110,7 @@ function _do_configure_interactive() {
   echo "  rootfs=<string>     : specify rootfs filename."
   echo "  qemu=<string>       : specify qemuscript filename."
   echo "  include=<string>    : libraries to include in the exploit binary. (\"-lXXX -lYYY\" format)"
-  echo "  assets=<string>     : assets to include in the compressed filesystem. (\"./A.txt B.txt\" format)"
+  echo "  assets add <string> : assets to include in the compressed filesystem. (\"<file>:<path_to_copy>\" format)"
 
   read -r -p " ('q' to quit) > " userinput
   case "$userinput" in
@@ -174,11 +174,26 @@ function _do_configure_interactive() {
       write_config "$target_config" "$includes"
       echo "[+] set $target_config to '$includes'"
     ;;
-    assets=*)
+    "assets add "*)
       local target_config="CUSTOM_ASSETS"
-      local assets="${userinput#*assets=}"
-      write_config "$target_config" "$assets"
-      echo "[+] set $target_config to '$assets'"
+      local assets="${userinput#*"assets add "}"
+      local filename path_to_copy
+      if [[ "$assets" == *":"* ]]; then
+        filename=$(cut -d ':' -f 1 <<<$assets)
+        path_to_copy=$(cut -d ':' -f 2 <<<$assets)
+      else
+        filename="$assets"
+        path_to_copy="/"
+      fi
+
+      read_config "CUSTOM_ASSETS"
+      if [ -z "$CUSTOM_ASSETS" ]; then
+        write_config "$target_config" "$filename:$path_to_copy"
+      else
+        write_config "$target_config" "$CUSTOM_ASSETS $filename:$path_to_copy"
+      fi
+      read_config "CUSTOM_ASSETS"
+      echo "[+] set $target_config to '$CUSTOM_ASSETS'"
     ;;
     q)
       exit 0

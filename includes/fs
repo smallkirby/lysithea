@@ -208,10 +208,20 @@ function compress_filesystem() {
   # copy custom assets
   read_config "CUSTOM_ASSETS"
   if ! [ -z "$CUSTOM_ASSETS" ]; then
-    cp $CUSTOM_ASSETS "$EXTRACTED" || {
-      echo "[!] copying $CUSTOM_ASSETS as root..."
-      sudo cp $CUSTOM_ASSETS "$EXTRACTED"
-    }
+    local assets_array=($CUSTOM_ASSETS)
+    for asset in "${assets_array[@]}"; do
+      local filename=$(cut -d ':' -f 1 <<< "$asset")
+      local path_to_copy=$(cut -d ':' -f 2 <<< "$asset")
+      if [ -f "$filename" ]; then
+        echo "[+] copying $filename -> $path_to_copy"
+        cp "$filename" "$EXTRACTED/$path_to_copy" || {
+          echo "[!] copying $asset as root..."
+          sudo cp "$filename" "$EXTRACTED/$path_to_copy"
+        }
+      else
+        echo "[-] $filename not found. skipping"
+      fi
+    done
   fi
 
   case "$filetype" in
