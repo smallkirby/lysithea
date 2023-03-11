@@ -124,7 +124,7 @@ Ingrid v1.0.0
 It stars QEMU automatically and runs `drothea` and `ingrid` inside it. They check kernel configurations and report you if the kernel has weak configurations. In this example, `drothea` reports that kernel version is 5.10.25, unprivileged uffd is allowed, unprivileged ebpf is allowed, and etc. It also says that KASLR and kptr restriction is enabled, which make debugging harder.
 
 
-## writing exploit and try on local
+## write exploit and try on local
 
 Now you know kernel configurations, you would see its source code and (I wish) notices some bugs. Then you have to write exploit and test it locally.
 `exploit.h` has many useful functions and macros for exploit, you can make use of it. Ofcourse you can use your exploit template cuz it is optimized for me.
@@ -278,7 +278,7 @@ You can edit other configurations also by `lysithea config`, such as build optio
 
 ## run exploit in remote host
 
-Congrats, you write exploit which works well locally. Then you have try it in remote host. Just type: `lysithea remote`:
+Congrats, you write exploit which works well locally. Then you have to try it in remote host. Just type: `lysithea remote`:
 
 ```remote.sh
 $ lysithea remote --host skbctf.skb.pw --port 25252
