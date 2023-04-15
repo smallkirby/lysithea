@@ -1,7 +1,7 @@
 # Tutorial
 
 This TUTORIAL describes how you can use `lysithea` in CTF kernel challenge. 
-Here, we use `lkgit` from [`TSGCTF2021`](TBD) as en example.
+Here, we use `lkgit` from [`TSGCTF2021`](https://github.com/tsg-ut/tsgctf2021/tree/main/pwn/lkgit) as en example.
 
 ## Init
 
