@@ -106,6 +106,7 @@ function _do_configure_interactive() {
   echo "[+] choose below command to flip current setting, or set options by 'OPTION_NAME=OPTION_VALUE'."
   echo "  nobuild             : skip build of exploit and compression of filesystem defaultly."
   echo "  nolog               : don't take log of local exploit history defaultly."
+  echo "  plain               : don't compile or copy additional files."
   echo "  exploit=<string>    : specify exploit filename."
   echo "  rootfs=<string>     : specify rootfs filename."
   echo "  qemu=<string>       : specify qemuscript filename."
@@ -129,6 +130,17 @@ function _do_configure_interactive() {
       local target_config="EXPLOIT_SKIP_BUILD"
       read_config "$target_config"
       if [ -n "$EXPLOIT_SKIP_BUILD" ] && [ "$EXPLOIT_SKIP_BUILD" -eq 1 ]; then
+        write_config "$target_config" 0
+        echo "[+] set $target_config to 0."
+      else
+        write_config "$target_config" 1
+        echo "[+] set $target_config to 1."
+      fi
+    ;;
+    plain)
+      local target_config="PLAIN_WORK"
+      read_config "$target_config"
+      if [ -n "$PLAIN_WORK" ] && [ "$PLAIN_WORK" -eq 1 ]; then
         write_config "$target_config" 0
         echo "[+] set $target_config to 0."
       else

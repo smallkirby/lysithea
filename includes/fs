@@ -193,17 +193,19 @@ function compress_filesystem() {
   fi
 
   # copy Drothea and Ingrid
-  for f in "drothea" "ingrid"; do
-    echo $f
-    if [ -f $f ]; then
-      cp $f "$EXTRACTED/$EXPLOIT_PATH" || {
-        echo "[!] copying $f as root..."
-        sudo cp $f "$EXTRACTED/$EXPLOIT_PATH"
-      }
-    else
-      vecho "[-] $f not found. skipping"
-    fi
-  done
+  if [ "$PLAIN_WORK" -ne 1 ]; then
+    for f in "drothea" "ingrid"; do
+      echo $f
+      if [ -f $f ]; then
+        cp $f "$EXTRACTED/$EXPLOIT_PATH" || {
+          echo "[!] copying $f as root..."
+          sudo cp $f "$EXTRACTED/$EXPLOIT_PATH"
+        }
+      else
+        vecho "[-] $f not found. skipping"
+      fi
+    done
+  fi
 
   # copy custom assets
   read_config "CUSTOM_ASSETS"

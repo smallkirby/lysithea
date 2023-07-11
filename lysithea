@@ -30,56 +30,62 @@ function init() {
   local KBASE=$SNIPPET_BASE/assets
   local TARGETS=("exploit.c exploit.h extract-vmlinux.sh sender.py") # targets under `assets`
 
-  # raw copy of assets
-  for target in ${TARGETS[@]}; do
-    if [ -f $target ]; then
-      printf "[-] %s already exists, skipping. \n" "$target"
-    else
-      printf "[.] copying %s\n" "$target"
-      cp "$KBASE/$target" ./ || _error_exit "$OPERATION_FAILED" "copy failed."
-    fi
-  done
-
-  # copy Drothea
-  local DROTHEA=$SNIPPET_BASE/drothea
-  if [ -f drothea ]; then
-    echo "[-] drothea already exists, skipping."
-  else
-    echo "[.] copying drothea"
-    cp "$DROTHEA/drothea" ./ || _error_exit "$OPERATION_FAILED" "copy failed"
-  fi
-
-  # compile Ingrit and copy
-  if [ -f ingrid ]; then
-    echo "[.] ingrid already exists, skipping"
-  else
-    echo "[.] compiling and copying ingrid"
-    local INGRID=$SNIPPET_BASE/drothea/ingrid
-    make -C "$INGRID" || _error_exit "$COMPILE_ERROR" "failed to build Ingrid"
-    cp "$INGRID/ingrid" ./ || _error_exit "$OPERATION_FAILED" "copy failed"
-  fi
-
-  # copy QEMU run script
-  local qemu_candidates
-  for word in "${QEMUSCRIPT_CANDS[@]}"; do
-    readarray -t tmp_cands < <(find . -maxdepth 1 -type f -name "$word*.*" | grep -v dev)
-    qemu_candidates+=( "${tmp_cands[@]}" )
-  done
-  if [ "${#qemu_candidates[@]}" -ge 1 ]; then
-    local qemu_runscript="${qemu_candidates[0]}"
-    QEMUSCRIPT="$qemu_runscript".dev
-    if ! [ -f "$QEMUSCRIPT" ]; then
-      printf "[+] found %d QEMU run-script candidates: %s\n" "${#qemu_candidates[@]}" "${qemu_candidates[*]}"
-      printf "[+] copying %s -> %s\n" "$qemu_runscript" "$QEMUSCRIPT"
-      cp "$qemu_runscript" "$QEMUSCRIPT"
-
-      vprintf "[.] setting config: %s=%s" "QEMUSCRIPT" "$QEMUSCRIPT"
-      write_config "QEMUSCRIPT" "$QEMUSCRIPT"
-    fi
-  fi
-
   init_config
-  init_git
+
+  if [ "$PLAIN_WORK" -ne 1 ]; then
+    # raw copy of assets
+    for target in ${TARGETS[@]}; do
+      if [ -f $target ]; then
+        printf "[-] %s already exists, skipping. \n" "$target"
+      else
+        printf "[.] copying %s\n" "$target"
+        cp "$KBASE/$target" ./ || _error_exit "$OPERATION_FAILED" "copy failed."
+      fi
+    done
+
+    # copy Drothea
+    local DROTHEA=$SNIPPET_BASE/drothea
+    if [ -f drothea ]; then
+      echo "[-] drothea already exists, skipping."
+    else
+      echo "[.] copying drothea"
+      cp "$DROTHEA/drothea" ./ || _error_exit "$OPERATION_FAILED" "copy failed"
+    fi
+
+    # compile Ingrit and copy
+    if [ -f ingrid ]; then
+      echo "[.] ingrid already exists, skipping"
+    else
+      echo "[.] compiling and copying ingrid"
+      local INGRID=$SNIPPET_BASE/drothea/ingrid
+      make -C "$INGRID" || _error_exit "$COMPILE_ERROR" "failed to build Ingrid"
+      cp "$INGRID/ingrid" ./ || _error_exit "$OPERATION_FAILED" "copy failed"
+    fi
+
+    # copy QEMU run script
+    local qemu_candidates
+    for word in "${QEMUSCRIPT_CANDS[@]}"; do
+      readarray -t tmp_cands < <(find . -maxdepth 1 -type f -name "$word*.*" | grep -v dev)
+      qemu_candidates+=( "${tmp_cands[@]}" )
+    done
+    if [ "${#qemu_candidates[@]}" -ge 1 ]; then
+      local qemu_runscript="${qemu_candidates[0]}"
+      QEMUSCRIPT="$qemu_runscript".dev
+      if ! [ -f "$QEMUSCRIPT" ]; then
+        printf "[+] found %d QEMU run-script candidates: %s\n" "${#qemu_candidates[@]}" "${qemu_candidates[*]}"
+        printf "[+] copying %s -> %s\n" "$qemu_runscript" "$QEMUSCRIPT"
+        cp "$qemu_runscript" "$QEMUSCRIPT"
+
+        vprintf "[.] setting config: %s=%s" "QEMUSCRIPT" "$QEMUSCRIPT"
+        write_config "QEMUSCRIPT" "$QEMUSCRIPT"
+      fi
+    fi
+
+    init_git
+  else # if [ "$PLAIN_WORK" -ne 1 ]
+    write_config "PLAIN_WORK" "1"
+    write_config "EXPLOIT_DONT_LOG" "1"
+  fi
 
   return 0
 }
@@ -221,7 +227,11 @@ function parse_arguments() {
       EXPLOIT_DONT_LOG=1
       shift
       ;;
-
+    #* general
+    --plain)
+      PLAIN_WORK=1
+      shift
+      ;;
     # commands
     version)
       SHOW_VERSION=1
