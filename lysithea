@@ -32,7 +32,7 @@ function init() {
 
   init_config
 
-  if [ "$PLAIN_WORK" -ne 1 ]; then
+  if [ -z "$PLAIN_WORK" ] || [ "$PLAIN_WORK" -ne 1 ]; then
     # raw copy of assets
     for target in ${TARGETS[@]}; do
       if [ -f $target ]; then
