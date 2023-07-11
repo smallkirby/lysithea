@@ -33,6 +33,7 @@ _lysithea()
 -v   --verbose
 -f   --force
 --nolog
+--plain
 
   '
 
