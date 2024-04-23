@@ -193,7 +193,7 @@ function compress_filesystem() {
   fi
 
   # copy Drothea and Ingrid
-  if [ "$PLAIN_WORK" -ne 1 ]; then
+  if [ -z "$PLAIN_WORK" ] || [ "$PLAIN_WORK" -ne 1 ]; then
     for f in "drothea" "ingrid"; do
       echo $f
       if [ -f $f ]; then
